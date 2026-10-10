@@ -34,14 +34,15 @@ export function OrderSheet({ onClose }: { onClose: (placed?: boolean) => void })
   const methods: Method[] = [
     ...(pay?.upi ?? []).map(u => ({ key: `upi:${u.id}`, label: `UPI · ${u.name}`, paymentMethod: 'UPI', intentApp: u.id })),
     ...(pay?.swiggyMoney ? [{ key: 'swiggypay', label: pay.swiggyMoney.name, paymentMethod: 'SwiggyPay' }] : []),
-    ...(pay?.cod ? [{ key: 'cod', label: pay.cod.name, paymentMethod: 'COD' }] : [])
+    ...(pay?.cod ? [{ key: 'cod', label: pay.cod.name, paymentMethod: 'Cash' }] : [])
   ]
 
   /** Remember what was ordered so delivery can restock exact pack sizes. */
   const rememberOrder = (o: PlacedOrder, cart: Cart) => {
     const bySpin = new Map(Object.entries(kitchen.skuMap ?? {}).map(([id, s]) => [s.spinId, { id, s }]))
     const lines = cart.items.flatMap(i => { const m = bySpin.get(i.spinId); return m ? [{ id: m.id, packs: i.quantity, quantityDescription: m.s.quantityDescription }] : [] })
-    updateKitchen(k => ({ ...k, pendingOrders: [...(k.pendingOrders ?? []), { orderId: o.orderId, at: Date.now(), total: cart.total, lines }] }))
+    const ordered = new Set(lines.map(l => l.id))
+    updateKitchen(k => ({ ...k, list: k.list.filter(id => !ordered.has(id)), pendingOrders: [...(k.pendingOrders ?? []), { orderId: o.orderId, at: Date.now(), total: cart.total, lines }] }))
   }
 
   const pollUpi = async (o: PlacedOrder) => {

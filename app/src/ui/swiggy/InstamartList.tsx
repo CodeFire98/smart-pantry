@@ -47,7 +47,7 @@ export function InstamartList() {
   })
   const checkDelivery = (orderId: string) => run(async () => {
     const { status: s } = await api.deliveryStatus(orderId)
-    toast(s.delivered ? 'Delivered. Tap “Add to pantry”.' : s.cancelled ? 'This order was cancelled.' : s.etaText || s.statusText || 'On the way')
+    toast(s.delivered ? 'Delivered. Tap “Delivered: add to pantry”.' : s.cancelled ? 'This order was cancelled.' : s.etaText ? `On the way · arriving in ${s.etaText}` : s.statusText || 'On the way')
   })
 
   return <>
@@ -104,7 +104,7 @@ export function InstamartList() {
     </div>
 
     {picking && <ProductPicker id={picking} onClose={() => setPicking(null)} />}
-    {ordering && <OrderSheet onClose={placed => { setOrdering(false); if (placed) { setCart(null); updateKitchen(k => ({ ...k, list: k.list.filter(id => !k.skuMap?.[id]) })) } }} />}
+    {ordering && <OrderSheet onClose={placed => { setOrdering(false); if (placed) setCart(null) }} />}
     {importing && <ImportSheet orders={importing} onClose={() => setImporting(null)} />}
   </>
 }

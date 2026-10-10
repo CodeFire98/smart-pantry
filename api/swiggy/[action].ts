@@ -124,7 +124,7 @@ const ACTIONS: Record<string, { method: 'GET' | 'POST'; run: (req: VercelRequest
       const b = body<{ nonce: unknown; paymentMethod: unknown; intentApp?: unknown }>(req)
       const nonce = str(b.nonce, 'confirmation')
       const paymentMethod = str(b.paymentMethod, 'payment method', 20)
-      if (!['UPI', 'COD', 'Cash', 'SwiggyPay'].includes(paymentMethod)) throw new HttpError(400, 'Invalid payment method')
+      if (!['UPI', 'Cash', 'SwiggyPay'].includes(paymentMethod)) throw new HttpError(400, 'Invalid payment method')
       const intentApp = paymentMethod === 'UPI' ? str(b.intentApp, 'UPI app', 120) : undefined
       const snap = await redis().getdel<{ total: number; count: number }>(KEYS.nonce(nonce))
       if (!snap) throw new HttpError(409, 'This confirmation expired. Review the order again.', { reason: 'stale' })
