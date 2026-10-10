@@ -56,7 +56,7 @@ export function matchOrderItem(name: string, kitchen: Pick<Kitchen, 'skuMap'>, c
   const have = new Set(words(name))
   let best: { id: string; score: number } | null = null
   for (const [id, ing] of Object.entries(catalog)) {
-    for (const cand of [words(ing.name), words(id.replace(/_/g, ' '))]) {
+    for (const cand of [words(ing.name), words(id.replace(/_/g, ' ')), ...(ing.aliases ?? []).map(words)]) {
       if (cand.length && cand.every(w => have.has(w)) && (!best || cand.length > best.score)) best = { id, score: cand.length }
     }
   }

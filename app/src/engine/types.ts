@@ -15,6 +15,8 @@ export interface Ingredient {
   unit: Unit
   kind: Kind
   shelf: number
+  /** Other names shops use (Hindi names, product types), for matching Instamart order lines. */
+  aliases?: string[]
   sku: Sku | null
 }
 

@@ -37,13 +37,19 @@ describe('matchOrderItem', () => {
     ['Farm Fresh Eggs - Pack of 6', 'eggs'],
     ['Catch Coriander Powder', 'coriander_powder'],
     ['Pintola Peanut Butter Crunchy', 'peanut_butter'],
-    ['Everest Chilli Flakes', 'chilli_flakes']
+    ['Everest Chilli Flakes', 'chilli_flakes'],
+    ['Lotus Spices Elaichi Green', 'cardamom'],
+    ['Daawat Sona Masoori', 'rice'],
+    ['Supreme Harvest Bayleaf', 'bay_leaf'],
+    ['NOICE Fresh Malai Paneer (Handmade Daily)', 'paneer'],
+    ['Supreme Harvest Black Pepper (Whole)', 'pepper'],
+    ['Nandini Dahi', 'curd']
   ])('%s → %s', (name, id) => expect(matchOrderItem(name, k, CATALOG)?.id).toBe(id))
   it('prefers a product you picked', () => {
     const picked = { skuMap: { curd: { spinId: 's', skuId: 'k', name: 'Nandini Good Life Dahi', quantityDescription: '500 g', price: 35, imageUrl: null, qty: 1 } } }
     expect(matchOrderItem('Nandini Good Life Dahi', picked, CATALOG)).toEqual({ id: 'curd', via: 'picked' })
   })
-  it('returns null when nothing fits', () => expect(matchOrderItem('Dishwash Liquid', k, CATALOG)).toBeNull())
+  it('returns null when nothing fits', () => expect(matchOrderItem('Beco Natural Dishwash Gel', k, CATALOG)).toBeNull())
 })
 
 describe('restockAmounts', () => {
