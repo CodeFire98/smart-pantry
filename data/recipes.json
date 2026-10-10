@@ -1,0 +1,225 @@
+{
+  "_doc": "Seed recipe DB: Lakshith's 20 dishes, one serving each, adapted to a kadai + saucepan on induction (no blender, microwave, pressure cooker or oven). Tiers are cumulative. Slot syntax: 'id' or 'id:qty' (qty in the ingredient's unit), 'a|b' = a or substitute b, leading '?' = optional (never blocks a tier). 'needs' lists equipment a tier requires. 'art' drives the illustrated plate until you add your own photo.",
+  "version": 1,
+  "recipes": [
+    {"id": "egg_fried_rice", "name": "Chilli Garlic Egg Fried Rice", "aliases": ["fried rice", "egg rice", "egg fried rice"],
+     "meals": ["lunch", "dinner"], "tags": ["quick", "spicy", "protein", "indo-chinese"],
+     "art": {"plate": "steel", "fill": "#E9C98E", "items": [["grain", 70, "#FFF6E0"], ["egg_bits", 9, "#F6C344"], ["dice", 6, "#E8792B"], ["pea", 6], ["flake", 12]]},
+     "tiers": [
+      {"name": "Basic", "mins": 15, "effort": 1, "add": ["rice:80", "eggs:2", "soy_sauce", "oil", "salt"],
+       "steps": ["Use leftover rice, or boil 80 g rice in the saucepan for 12 min and spread to cool", "Scramble the eggs in a hot kadai and set aside", "Toss the rice with soy sauce on high heat, fold the eggs back in"]},
+      {"name": "Chilli garlic", "mins": 18, "effort": 1, "add": ["onion:1", "ginger_garlic_paste", "chilli_flakes", "chilli_oil"],
+       "steps": ["Fry the onion with a spoon of ginger-garlic paste and chilli flakes before the rice", "Finish with a drizzle of chilli oil"]},
+      {"name": "Loaded", "mins": 22, "effort": 2, "add": ["carrot:1", "peas:40", "?capsicum:1", "pepper"],
+       "steps": ["Stir-fry diced carrot, peas and capsicum on high heat before the rice", "Crack black pepper over the top"]}]},
+
+    {"id": "tomato_bath", "name": "Spicy Tomato Bath", "aliases": ["tomato bath", "tomato rice"],
+     "meals": ["lunch", "dinner"], "tags": ["comfort", "spicy", "south-indian"],
+     "art": {"plate": "steel", "fill": "#D9643A", "items": [["grain", 60, "#F5B38C"], ["pea", 8], ["leaf", 4], ["flake", 8]]},
+     "tiers": [
+      {"name": "Basic", "mins": 25, "effort": 1, "add": ["rice:80", "tomato:2", "onion:1", "mustard", "turmeric", "chilli_powder", "oil", "salt"],
+       "steps": ["Temper mustard seeds in oil in the saucepan", "Fry onion, add chopped tomatoes and spices, cook to a thick masala", "Add washed rice and 1.75× water, cover and cook on low for 15 min"]},
+      {"name": "Masala", "mins": 28, "effort": 2, "add": ["?green_chilli", "ginger_garlic_paste", "garam_masala", "peas:40"],
+       "steps": ["Add ginger-garlic paste and green chilli with the onion", "Stir in peas and garam masala before the rice"]},
+      {"name": "With raita", "mins": 32, "effort": 2, "add": ["ghee", "peanuts:15", "curd:100", "cumin"],
+       "steps": ["Fry peanuts in ghee and spoon over the rice", "Whisk curd with salt and a pinch of roasted jeera for raita"]}]},
+
+    {"id": "potato_hash", "name": "Crispy Masala Potato Hash", "aliases": ["hash", "potato hash", "aloo"],
+     "meals": ["breakfast", "snack", "dinner"], "tags": ["comfort", "crispy"],
+     "art": {"plate": "ceramic", "fill": "#EADBC1", "items": [["wedge", 16, "#D99A3A"], ["dice", 5, "#3E8E4A"], ["egg", 1], ["flake", 14]]},
+     "tiers": [
+      {"name": "Basic", "mins": 22, "effort": 2, "add": ["potato:2", "oil", "salt", "chilli_powder", "pepper"],
+       "steps": ["Dice the potatoes small and parboil in salted water for 7 min, then drain well", "Fry in a thin layer of oil in the kadai, turning only when golden"]},
+      {"name": "Peri-peri", "mins": 25, "effort": 2, "add": ["onion:1", "peri_peri"],
+       "steps": ["Add onion once the potatoes crisp", "Toss with peri-peri mix off the heat"]},
+      {"name": "Loaded", "mins": 30, "effort": 2, "add": ["capsicum:1", "eggs:1", "?cheese:1"],
+       "steps": ["Add capsicum with the onion", "Fry an egg and slide it on top; tear a cheese slice over the hot hash"]}]},
+
+    {"id": "chilli_momos", "name": "Crispy Chilli Chicken Momos", "aliases": ["momos", "momo", "dumplings"],
+     "meals": ["snack", "dinner"], "tags": ["quick", "spicy", "indo-chinese", "chicken"],
+     "art": {"plate": "ceramic", "fill": "#F3EBDD", "items": [["momo", 7], ["sauce", 1, "#C2361F"], ["flake", 10]]},
+     "tiers": [
+      {"name": "Basic", "mins": 12, "effort": 1, "add": ["momos:8", "oil"],
+       "steps": ["Cook the frozen momos as the packet says, without thawing", "Pan-fry in a little oil until the bottoms crisp"]},
+      {"name": "With dip", "mins": 14, "effort": 1, "add": ["soy_sauce", "sriracha", "chilli_oil"],
+       "steps": ["Mix soy sauce, sriracha, chilli oil and a splash of water as a dip"]},
+      {"name": "Chilli tossed", "mins": 18, "effort": 2, "add": ["onion:1", "capsicum:1", "ginger_garlic_paste", "chilli_flakes"],
+       "steps": ["Stir-fry onion, capsicum and ginger-garlic paste on high heat", "Add the sauce, then toss the crisp momos through it"]}]},
+
+    {"id": "pb_banana", "name": "Peanut Butter Banana Shake", "aliases": ["smoothie", "shake", "banana", "peanut butter"],
+     "meals": ["breakfast", "snack"], "tags": ["quick", "protein", "sweet", "no-cook"],
+     "art": {"plate": "glass", "fill": "#D8B07A", "items": [["froth", 14, "#F1DEC0"], ["swirl", 1, "#8A5A2B"], ["coin", 3, "#F4E3A1"]]},
+     "tiers": [
+      {"name": "Fork-mashed", "mins": 5, "effort": 1, "add": ["banana:1", "milk:250", "peanut_butter", "honey"],
+       "steps": ["Mash the banana to a smooth paste with a fork", "Whisk in the peanut butter and honey, then the cold milk a little at a time"]},
+      {"name": "Muesli bowl", "mins": 5, "effort": 1, "add": ["muesli:50", "curd:100", "cinnamon"],
+       "steps": ["Pour the shake over muesli in a bowl, top with curd and a pinch of cinnamon"]},
+      {"name": "Blended protein", "mins": 6, "effort": 1, "needs": ["blender"], "add": ["protein_powder"],
+       "steps": ["Blend everything with a scoop of protein powder until smooth"]}]},
+
+    {"id": "paneer_pulao", "name": "Restaurant-Style Paneer Pulao", "aliases": ["pulao", "paneer pulao", "veg pulao"],
+     "meals": ["lunch", "dinner"], "tags": ["comfort", "protein", "meal-prep"],
+     "art": {"plate": "steel", "fill": "#F1E2BF", "items": [["grain", 70, "#FFFBEF"], ["cube", 7, "#FFF6DC"], ["pea", 9], ["dice", 6, "#E8792B"], ["bayleaf", 1]]},
+     "tiers": [
+      {"name": "Veg pulao", "mins": 30, "effort": 2, "add": ["rice:90", "onion:1", "peas:50", "cumin", "bay_leaf", "ghee|oil", "salt"],
+       "steps": ["Fry a bay leaf and jeera in ghee in the saucepan", "Sauté onion until golden, add peas", "Add washed rice and 1.75× water with salt, cover and cook on low for 15 min"]},
+      {"name": "Paneer", "mins": 35, "effort": 2, "add": ["paneer:100", "carrot:1", "cardamom", "garam_masala"],
+       "steps": ["Add two cardamom pods with the bay leaf, and diced carrot with the peas", "Pan-fry paneer cubes in the kadai and fold them in with garam masala; rest covered 5 min"]},
+      {"name": "With raita", "mins": 38, "effort": 2, "add": ["ginger_garlic_paste", "curd:100", "pepper"],
+       "steps": ["Add a spoon of ginger-garlic paste after the onion", "Serve with curd whisked with salt and black pepper"]}]},
+
+    {"id": "paneer_butter_masala", "name": "Paneer Butter Masala", "aliases": ["butter masala", "paneer butter masala", "pbm", "paneer curry"],
+     "meals": ["lunch", "dinner"], "tags": ["comfort", "indulgent", "protein"],
+     "art": {"plate": "katori", "fill": "#D8572A", "items": [["cube", 8, "#FFF1D6"], ["swirl", 1, "#FBE9D2"], ["leaf", 3]]},
+     "tiers": [
+      {"name": "Quick masala", "mins": 25, "effort": 2, "add": ["paneer:150", "onion:1", "tomato:2", "oil", "chilli_powder", "salt"],
+       "steps": ["Chop onion and tomato very fine (no blender needed)", "Cook in the kadai until completely soft, mashing with the back of the ladle", "Add paneer and a splash of water, simmer 5 min"]},
+      {"name": "Butter masala", "mins": 28, "effort": 2, "add": ["butter:15", "ginger_garlic_paste", "garam_masala", "kasuri_methi"],
+       "steps": ["Start the masala in butter with ginger-garlic paste", "Crush kasuri methi over the top with a last knob of butter"]},
+      {"name": "Restaurant", "mins": 35, "effort": 3, "add": ["milk:50|cream:50", "honey", "rice:80"],
+       "steps": ["Stir in milk or cream and a few drops of honey for that restaurant sweetness", "Serve over rice cooked in the saucepan"]}]},
+
+    {"id": "soya_masala", "name": "Spicy Soya Chunk Masala", "aliases": ["soya", "soya chunks", "meal maker"],
+     "meals": ["lunch", "dinner"], "tags": ["protein", "spicy", "healthy"],
+     "art": {"plate": "katori", "fill": "#9E4A22", "items": [["chunk", 12, "#C98A52"], ["leaf", 3], ["flake", 6]]},
+     "tiers": [
+      {"name": "Basic", "mins": 25, "effort": 1, "add": ["soya:50", "onion:1", "tomato:1", "oil", "salt", "turmeric", "chilli_powder"],
+       "steps": ["Boil soya chunks for 6 min, drain and squeeze dry", "Fry onion until golden, add tomato and spices, cook to a thick gravy", "Add soya and a little water, simmer 10 min"]},
+      {"name": "Masala", "mins": 28, "effort": 2, "add": ["ginger_garlic_paste", "coriander_powder", "garam_masala"],
+       "steps": ["Add ginger-garlic paste after the onion, then coriander powder and garam masala"]},
+      {"name": "Full meal", "mins": 35, "effort": 2, "add": ["kasuri_methi", "curd:50", "rice:80"],
+       "steps": ["Toss the squeezed soya in curd and spices for 10 min before cooking", "Finish with kasuri methi and serve with rice"]}]},
+
+    {"id": "moong_dal_tadka", "name": "Dhaba-Style Moong Dal Tadka", "aliases": ["dal", "daal", "moong dal", "dal tadka", "dal rice"],
+     "meals": ["lunch", "dinner"], "tags": ["comfort", "healthy"],
+     "art": {"plate": "katori", "fill": "#E3A92F", "items": [["swirl", 1, "#F7D57A"], ["seed", 14, "#6B4A1E"], ["flake", 8], ["leaf", 2]]},
+     "tiers": [
+      {"name": "Basic", "mins": 25, "effort": 1, "add": ["moong_dal:60", "turmeric", "salt", "rice:80"],
+       "steps": ["Simmer washed moong dal with turmeric and 3× water in the saucepan for 20 min (moong needs no cooker)", "Cook rice alongside"]},
+      {"name": "Tadka", "mins": 27, "effort": 1, "add": ["ghee|oil", "cumin", "mustard", "chilli_powder"],
+       "steps": ["Crackle jeera and mustard in ghee, take off the heat, add chilli powder and pour over the dal"]},
+      {"name": "Dhaba", "mins": 33, "effort": 2, "add": ["onion:1", "tomato:1", "ginger_garlic_paste", "kasuri_methi", "?green_chilli"],
+       "steps": ["Build the tadka with onion, ginger-garlic paste and tomato until jammy", "Simmer the dal in it for 3 min, crush in kasuri methi"]}]},
+
+    {"id": "chicken_curry", "name": "Thick Chicken Masala Curry", "aliases": ["chicken curry", "chicken masala", "chicken"],
+     "meals": ["lunch", "dinner"], "tags": ["spicy", "protein", "chicken", "indulgent"],
+     "art": {"plate": "katori", "fill": "#8E3317", "items": [["chunk", 9, "#B5622E"], ["leaf", 3], ["swirl", 1, "#C05A2C"]]},
+     "tiers": [
+      {"name": "Basic", "mins": 40, "effort": 2, "add": ["chicken:250", "onion:1", "tomato:2", "oil", "salt", "turmeric", "chilli_powder"],
+       "steps": ["Brown the onion in the kadai, add tomato and spices and cook until thick", "Add chicken, coat well, cover and cook 20–25 min until it reaches 74°C inside"]},
+      {"name": "Masala", "mins": 45, "effort": 3, "add": ["ginger_garlic_paste", "coriander_powder", "garam_masala"],
+       "steps": ["Add ginger-garlic paste after the onion; garam masala at the end"]},
+      {"name": "Sunday", "mins": 60, "effort": 3, "add": ["curd:50", "kasuri_methi", "rice:80"],
+       "steps": ["Marinate the chicken in curd and spices for 15 min", "Finish with kasuri methi, serve with rice"]}]},
+
+    {"id": "chilli_paneer", "name": "Indo-Chinese Chilli Paneer", "aliases": ["chilli paneer", "chili paneer"],
+     "meals": ["dinner", "snack"], "tags": ["spicy", "protein", "indo-chinese"],
+     "art": {"plate": "ceramic", "fill": "#7A2E1C", "items": [["cube", 9, "#F7E6C4"], ["dice", 7, "#3E8E4A"], ["petal", 6, "#EADCC0"], ["flake", 10]]},
+     "tiers": [
+      {"name": "Quick toss", "mins": 15, "effort": 1, "add": ["paneer:150", "soy_sauce", "chilli_flakes", "oil"],
+       "steps": ["Cube and pan-fry the paneer in the kadai until golden", "Toss with soy sauce, chilli flakes and a splash of water"]},
+      {"name": "Dry", "mins": 20, "effort": 2, "add": ["onion:1", "capsicum:1", "sriracha", "ginger_garlic_paste"],
+       "steps": ["Stir-fry onion petals and capsicum on high heat with ginger-garlic paste", "Add sriracha with the soy, then the paneer"]},
+      {"name": "Gravy", "mins": 25, "effort": 2, "add": ["cornflour", "chilli_oil", "rice:80"],
+       "steps": ["Thicken with a spoon of cornflour in water", "Finish with chilli oil, serve over rice"]}]},
+
+    {"id": "chicken_stirfry", "name": "Chilli Garlic Chicken Stir-Fry", "aliases": ["chicken stir fry", "stir fry"],
+     "meals": ["dinner"], "tags": ["spicy", "protein", "chicken", "indo-chinese"],
+     "art": {"plate": "ceramic", "fill": "#6E2A16", "items": [["chunk", 10, "#C07A44"], ["dice", 7, "#3E8E4A"], ["petal", 5, "#EADCC0"], ["flake", 8]]},
+     "tiers": [
+      {"name": "Basic", "mins": 20, "effort": 2, "add": ["chicken:200", "ginger_garlic_paste", "soy_sauce", "pepper", "oil", "salt"],
+       "steps": ["Cut chicken small, season with salt and pepper", "Sear in a very hot kadai until cooked through, toss with ginger-garlic paste and soy"]},
+      {"name": "Chilli garlic", "mins": 24, "effort": 2, "add": ["onion:1", "capsicum:1", "sriracha"],
+       "steps": ["Add onion and capsicum for the last 3 min, then sriracha"]},
+      {"name": "Bowl", "mins": 30, "effort": 2, "add": ["chilli_oil", "rice:80", "?cornflour"],
+       "steps": ["Glaze with chilli oil (and a cornflour slurry if you have it)", "Serve over rice"]}]},
+
+    {"id": "egg_curry", "name": "Spicy Egg Curry", "aliases": ["egg curry", "anda curry"],
+     "meals": ["lunch", "dinner"], "tags": ["spicy", "protein", "comfort"],
+     "art": {"plate": "katori", "fill": "#B4421E", "items": [["halfegg", 4], ["leaf", 3], ["flake", 6]]},
+     "tiers": [
+      {"name": "Basic", "mins": 22, "effort": 1, "add": ["eggs:2", "onion:1", "tomato:1", "oil", "salt", "turmeric", "chilli_powder"],
+       "steps": ["Boil the eggs 9 min in the saucepan, peel and slit", "Make a thick onion-tomato masala in the kadai, add water to a gravy", "Simmer the eggs in it for 5 min"]},
+      {"name": "Masala", "mins": 25, "effort": 2, "add": ["ginger_garlic_paste", "garam_masala", "coriander_powder"],
+       "steps": ["Fry the slit eggs briefly in oil with chilli powder first", "Add ginger-garlic paste and the powders to the masala"]},
+      {"name": "Full meal", "mins": 30, "effort": 2, "add": ["kasuri_methi", "rice:80"],
+       "steps": ["Finish with kasuri methi, serve with rice"]}]},
+
+    {"id": "puliyogare", "name": "Puliyogare Rice", "aliases": ["puliyogare", "tamarind rice", "pulihora"],
+     "meals": ["lunch", "dinner"], "tags": ["quick", "south-indian", "tangy"],
+     "art": {"plate": "steel", "fill": "#A8662A", "items": [["grain", 70, "#D7A15E"], ["peanut", 8, "#E9C38A"], ["seed", 10, "#2B1D10"], ["leaf", 3]]},
+     "tiers": [
+      {"name": "Basic", "mins": 10, "effort": 1, "add": ["rice:80", "puliyogare", "oil"],
+       "steps": ["Use leftover rice (or cook 80 g for 12 min and cool)", "Warm puliyogare paste in oil for a minute, fold in the rice"]},
+      {"name": "Tempered", "mins": 12, "effort": 1, "add": ["mustard", "?green_chilli"],
+       "steps": ["Temper mustard seeds and green chilli before the paste"]},
+      {"name": "Temple-style", "mins": 15, "effort": 1, "add": ["peanuts:20", "ghee", "curd:100"],
+       "steps": ["Fry peanuts in ghee for crunch", "Serve with a bowl of curd"]}]},
+
+    {"id": "paneer_tikka", "name": "Pan-Seared Paneer Tikka", "aliases": ["tikka", "paneer tikka"],
+     "meals": ["snack", "dinner"], "tags": ["protein", "indulgent"],
+     "art": {"plate": "ceramic", "fill": "#EFE3CF", "items": [["tikka", 8, "#E58A3A"], ["dice", 5, "#3E8E4A"], ["petal", 5, "#B07BC0"]]},
+     "tiers": [
+      {"name": "Quick", "mins": 15, "effort": 1, "add": ["paneer:150", "curd:50", "chilli_powder", "turmeric", "salt", "oil"],
+       "steps": ["Mix curd with spices and salt, coat the paneer cubes", "Sear in a hot kadai, turning until charred on several sides"]},
+      {"name": "Tandoori", "mins": 22, "effort": 2, "add": ["garam_masala", "kasuri_methi", "ginger_garlic_paste"],
+       "steps": ["Add ginger-garlic paste, garam masala and crushed kasuri methi to the marinade"]},
+      {"name": "Skewer-style", "mins": 40, "effort": 2, "add": ["onion:1", "capsicum:1", "lemon_juice"],
+       "steps": ["Marinate paneer with onion and capsicum chunks for 20 min", "Sear everything together, finish with lemon juice"]}]},
+
+    {"id": "chicken_pulao", "name": "One-Pot Chicken Pulao", "aliases": ["chicken pulao", "chicken rice"],
+     "meals": ["lunch", "dinner"], "tags": ["protein", "chicken", "meal-prep"],
+     "art": {"plate": "steel", "fill": "#E8CD98", "items": [["grain", 60, "#FFF4DA"], ["chunk", 7, "#B97A45"], ["pea", 7], ["dice", 5, "#E8792B"], ["bayleaf", 1]]},
+     "tiers": [
+      {"name": "Basic", "mins": 40, "effort": 2, "add": ["chicken:200", "rice:90", "onion:1", "oil", "salt", "cumin"],
+       "steps": ["Brown jeera and onion in the saucepan, add chicken and brown lightly", "Add washed rice and 1.75× water, cover and cook on low 18 min; rest 10 min"]},
+      {"name": "Spiced", "mins": 45, "effort": 2, "add": ["bay_leaf", "cardamom", "garam_masala", "ginger_garlic_paste"],
+       "steps": ["Start with bay leaf and cardamom, add ginger-garlic paste with the chicken"]},
+      {"name": "Loaded", "mins": 50, "effort": 3, "add": ["peas:50", "carrot:1", "ghee", "curd:100"],
+       "steps": ["Add peas and carrot with the rice, finish with ghee", "Serve with curd"]}]},
+
+    {"id": "paneer_skillet", "name": "Creamy Chilli Paneer Skillet", "aliases": ["paneer skillet", "creamy paneer"],
+     "meals": ["dinner", "lunch"], "tags": ["indulgent", "protein", "quick"],
+     "art": {"plate": "ceramic", "fill": "#F2DFB8", "items": [["cube", 8, "#FFF4DC"], ["swirl", 1, "#F8EBD0"], ["dice", 5, "#3E8E4A"], ["flake", 12]]},
+     "tiers": [
+      {"name": "Basic", "mins": 15, "effort": 1, "add": ["paneer:150", "milk:80", "cheese:1", "pepper", "butter:10|oil"],
+       "steps": ["Sear paneer cubes in butter and set aside", "Melt cheese into the milk over low heat with pepper, return the paneer"]},
+      {"name": "Chilli", "mins": 18, "effort": 1, "add": ["onion:1", "chilli_flakes"],
+       "steps": ["Brown the onion before the milk; finish with chilli flakes"]},
+      {"name": "Loaded", "mins": 22, "effort": 2, "add": ["capsicum:1", "bread:2"],
+       "steps": ["Add capsicum with the onion", "Toast bread in the kadai to mop it up"]}]},
+
+    {"id": "omelette_toast", "name": "Cheesy Masala Omelette Toast", "aliases": ["omelette", "omelet", "eggs", "egg toast", "anda"],
+     "meals": ["breakfast", "dinner", "snack"], "tags": ["quick", "protein"],
+     "art": {"plate": "ceramic", "fill": "#EFE6D6", "items": [["omelette", 1], ["toast", 2], ["flake", 8], ["leaf", 2]]},
+     "tiers": [
+      {"name": "Basic", "mins": 8, "effort": 1, "add": ["eggs:2", "salt", "pepper", "oil|butter"],
+       "steps": ["Beat the eggs with salt and pepper", "Cook in a lightly oiled pan over medium-low heat and fold"]},
+      {"name": "Masala", "mins": 11, "effort": 1, "add": ["onion:1", "?green_chilli", "chilli_flakes"],
+       "steps": ["Beat chopped onion, green chilli and chilli flakes into the eggs"]},
+      {"name": "Cheesy toast", "mins": 14, "effort": 1, "add": ["cheese:1", "bread:2", "butter:10"],
+       "steps": ["Lay cheese on the omelette before folding and let it melt", "Toast buttered bread in the same pan"]}]},
+
+    {"id": "potato_soup", "name": "Creamy Potato & Carrot Soup", "aliases": ["soup", "potato soup", "carrot soup"],
+     "meals": ["lunch", "dinner"], "tags": ["light", "comfort", "healthy"],
+     "art": {"plate": "katori", "fill": "#EFAE5E", "items": [["swirl", 1, "#FBEBD0"], ["pepperdot", 16], ["leaf", 2]]},
+     "tiers": [
+      {"name": "Rustic", "mins": 25, "effort": 1, "add": ["potato:1", "carrot:1", "onion:1", "salt", "pepper", "oil"],
+       "steps": ["Sauté onion in the saucepan, add diced potato and carrot with water to cover", "Simmer 15 min until soft, then mash with a ladle or fork"]},
+      {"name": "Creamy", "mins": 28, "effort": 1, "add": ["butter:10", "milk:100"],
+       "steps": ["Start the onion in butter", "Loosen the mash with milk and warm through gently"]},
+      {"name": "Velvety", "mins": 30, "effort": 1, "needs": ["blender"], "add": ["chilli_flakes", "bread:2"],
+       "steps": ["Blend until silky", "Serve with toast and chilli flakes"]}]},
+
+    {"id": "veg_rice_bowl", "name": "Spiced Veg Rice Bowl with Fried Egg", "aliases": ["rice bowl", "veg rice", "fried egg"],
+     "meals": ["lunch", "dinner"], "tags": ["healthy", "protein", "quick"],
+     "art": {"plate": "katori", "fill": "#E5C487", "items": [["grain", 50, "#FFF3D6"], ["pea", 8], ["dice", 7, "#E8792B"], ["egg", 1]]},
+     "tiers": [
+      {"name": "Basic", "mins": 15, "effort": 1, "add": ["rice:80", "cumin", "oil", "salt", "garam_masala", "eggs:1"],
+       "steps": ["Crackle jeera in oil, toss in cooked rice with garam masala and salt", "Top with a fried egg"]},
+      {"name": "Veg", "mins": 20, "effort": 2, "add": ["onion:1", "carrot:1", "peas:40"],
+       "steps": ["Fry onion, diced carrot and peas until tender before the rice"]},
+      {"name": "Loaded", "mins": 22, "effort": 2, "add": ["capsicum:1", "chilli_oil", "pepper"],
+       "steps": ["Add capsicum with the veg; finish with chilli oil and cracked pepper"]}]}
+  ]
+}

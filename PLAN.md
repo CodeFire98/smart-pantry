@@ -1,0 +1,49 @@
+# Smart Pantry build plan
+
+The plan builds outward from the deterministic core, so every phase leaves a usable app. See [PRD.md](PRD.md) for the reasoning behind each decision.
+
+## Phase 0: Validate the concept (now, about 3 days)
+- [ ] Use the clickable prototype (`prototype/index.html`) for a few real meals. Does the tier and energy model match how I actually decide what to cook?
+- [ ] Answer the open questions in PRD §9 (diet, household size, appliances).
+- [ ] List my 40 real dishes, then write tiers for the first 15 in the recipe JSON format (PRD §6.3).
+- [ ] **Apply to Swiggy Builders Club** (mcp.swiggy.com/builders). Access is the longest lead time, so start it now.
+- **Exit:** the recipe format and scoring hold up for 15 dishes, and the application is submitted.
+
+## Phase 1: V1 PWA core, no Swiggy yet (about 2 weeks)
+1. Scaffold Vite + React + TS PWA with installable manifest and offline cache.
+2. `engine/` as a pure TS module: tier resolution, substitutes, optional ingredients, scoring and the "why" terms. **Unit-test with fixtures** (pantry + context → expected ranking).
+3. Recipe DB as versioned JSON in the repo, validated by a schema at build time.
+4. Pantry: IndexedDB store, levels, item kinds, a shelf-life table and expiry estimates.
+5. Screens: Today (suggestions), Ask ("I want"), Dish detail (tiers), Pantry, Shopping list.
+6. "I cooked this" deducts usage and updates the cook log, and the log down-ranks recent dishes.
+7. Shopping list falls back to copy/share text plus Instamart search links.
+- **Exit:** I use it daily for a week without wanting to fall back to my head.
+
+## Phase 2: Sync and Swiggy (about 1–2 weeks, once staging access arrives)
+1. Supabase: auth, tables `pantry_items`, `cook_log`, `ingredient_sku_map`. Sync IndexedDB in both directions.
+2. Edge function `swiggy-proxy`: OAuth 2.1 PKCE, token storage server-side, and a typed wrapper per MCP tool.
+3. **Staging spike first.** Confirm `get_orders` / `get_order_details` return line items, and document the response shape.
+4. Ingredient → SKU mapping via `search_products`. Remember my pick per ingredient (brand and pack).
+5. Cart: merge with `get_cart`, write with `update_cart`, show the bill, and use a **hard confirmation sheet** before `checkout`.
+6. Pantry import from orders, plus `your_go_to_items` for first-run seeding.
+7. Record a demo video and apply for production.
+- **Exit:** "I want rajma" → confirm → order placed → arrives → pantry updated, with no manual typing.
+
+## Phase 3: Smart edges (optional, about 1 week)
+- Free-text → structured query with a free-tier LLM (Gemini Flash or Groq), outputting a JSON schema of `{dishes, tags, energy, meal}`. The engine still ranks.
+- Recipe authoring script: dish name → tiered JSON draft, then my review, then commit.
+- Receipt photo or voice → pantry items.
+- Lazy pantry check: ask "still have coriander?" only when a top suggestion depends on it.
+
+## Phase 4: Native shell (when needed)
+- Wrap with Capacitor (reusing the PWA) for push notifications for expiry and delivery tracking, plus a home-screen widget for "tonight's top 3".
+
+## Tech choices at a glance
+
+| Layer | Choice | Reason |
+|---|---|---|
+| Client | React + Vite PWA | Fastest path to a phone app, one codebase |
+| Logic | Pure TS engine | Deterministic, testable, works offline |
+| Data | IndexedDB, then Supabase | Local-first, with sync added later |
+| Commerce | Swiggy Instamart MCP via edge proxy | Tokens stay server-side |
+| AI | None on the critical path. Free-tier LLM only for parsing and authoring | Cost, reliability and determinism |
