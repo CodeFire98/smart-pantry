@@ -6,8 +6,10 @@ let client: Redis | null = null
 /** Upstash client. The Vercel Marketplace integration provides either the UPSTASH_* or the KV_* variable names. */
 export function redis(): Redis {
   if (client) return client
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN
+  // The integration may add a custom prefix (e.g. spantry_KV_REST_API_URL), so match by suffix.
+  const find = (suffix: string) => Object.entries(process.env).find(([k, v]) => v && (k === suffix || k.endsWith(`_${suffix}`)))?.[1]
+  const url = find('UPSTASH_REDIS_REST_URL') ?? find('KV_REST_API_URL')
+  const token = find('UPSTASH_REDIS_REST_TOKEN') ?? find('KV_REST_API_TOKEN')
   if (!url || !token) throw new HttpError(503, 'Server storage isn’t set up yet (Upstash Redis).')
   client = new Redis({ url, token })
   return client

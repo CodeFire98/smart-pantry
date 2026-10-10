@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "app-preview", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "app", "run", "preview", "--", "--port", "4173", "--strictPort"], "port": 4173 }
+    { "name": "app-preview", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "app", "run", "preview", "--", "--port", "4173", "--strictPort"], "port": 4173 },
+    { "name": "local-swiggy", "runtimeExecutable": "npx", "runtimeArgs": ["--yes", "vercel@63.1.2", "dev", "--listen", "3100", "--scope", "lakshiths-projects-15387e1d"], "port": 3100 }
   ]
 }
