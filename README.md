@@ -29,6 +29,8 @@ Tests: `npm test`. Typecheck: `npm run typecheck`. Production build: `npm run bu
 
 ## Deploy (Vercel)
 
+Live at **https://lakshith-pantry.vercel.app**. Deploy manually with `npx vercel deploy --prod` from the repo root; the project is already linked.
+
 1. Go to vercel.com and choose **Add New → Project**, then import `CodeFire98/smart-pantry`. Leave the root directory as the repo root; `vercel.json` already builds `app/` and serves `app/dist`.
 2. Open the deployment URL on your phone and choose **Add to Home Screen**. The app works offline.
 3. Data (pantry, journal and photos) is stored on the phone in IndexedDB. Use **My → Download backup** now and then.
