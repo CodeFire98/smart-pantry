@@ -5,7 +5,10 @@ import { useSwiggy } from '../../swiggy/useSwiggy'
 import { useApp } from '../AppContext'
 import { Icon } from '../components'
 
-type Method = { key: string; label: string; paymentMethod: string; intentApp?: string }
+type Method = { key: string; label: string; paymentMethod: string; intentApp?: string; qr?: boolean }
+
+/** UPI app hand-off only works on a phone; laptops pay by scanning Swiggy's QR page. */
+const isPhone = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
 
 /**
  * The one place an order can be placed. Shows the live cart and the payment methods Swiggy offers,
@@ -32,7 +35,8 @@ export function OrderSheet({ onClose }: { onClose: (placed?: boolean) => void })
   useEffect(() => { load(); return () => { stop.current = true } }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const methods: Method[] = [
-    ...(pay?.upi ?? []).map(u => ({ key: `upi:${u.id}`, label: `UPI · ${u.name}`, paymentMethod: 'UPI', intentApp: u.id })),
+    ...(isPhone() ? (pay?.upi ?? []).map(u => ({ key: `upi:${u.id}`, label: `UPI · ${u.name}`, paymentMethod: 'UPI', intentApp: u.id })) : []),
+    ...(pay?.qr ? [{ key: 'upi:qr', label: isPhone() ? 'UPI · any app' : 'UPI · scan QR with your phone', paymentMethod: 'UPI', qr: true }] : []),
     ...(pay?.swiggyMoney ? [{ key: 'swiggypay', label: pay.swiggyMoney.name, paymentMethod: 'SwiggyPay' }] : []),
     ...(pay?.cod ? [{ key: 'cod', label: pay.cod.name, paymentMethod: 'Cash' }] : [])
   ]
@@ -51,9 +55,13 @@ export function OrderSheet({ onClose }: { onClose: (placed?: boolean) => void })
     while (!stop.current && Date.now() < deadline) {
       try {
         const { status: s } = await api.paymentStatus({ paasId: o.paasId!, orderId: o.orderId })
-        if (s.terminal) {
-          if (s.isTerminalSuccess) { await api.confirmOrder({ orderId: o.orderId, paasId: o.paasId!, transactionId: o.transactionId }); setStage('done'); toast('Payment received. Order placed.'); return }
-          setErr('The UPI payment didn’t go through, so the order wasn’t placed.'); setStage('review'); return
+        const st = (s.status ?? '').toLowerCase()
+        const ok = s.isTerminalSuccess || st === 'success'
+        const failed = s.isTerminalFailure || st === 'failed' || st.startsWith('refund')
+        if (s.terminal || ok || failed) {
+          if (ok) { await api.confirmOrder({ orderId: o.orderId, paasId: o.paasId!, transactionId: o.transactionId }); setStage('done'); toast('Payment received. Order placed.'); return }
+          setErr(/refund/i.test(s.status ?? '') ? 'The payment is being refunded by Swiggy, so the order wasn’t placed.' : 'The UPI payment didn’t go through, so the order wasn’t placed. Pick a payment method to try again.')
+          setStage('review'); load(); return
         }
       } catch (e) { setErr(explain(e)) }
       await new Promise(r => setTimeout(r, Math.max(3000, o.pollingIntervalInMs ?? 5000)))
@@ -68,7 +76,7 @@ export function OrderSheet({ onClose }: { onClose: (placed?: boolean) => void })
     if (!snap || !method) return
     setStage('placing'); setErr(null)
     try {
-      const { order: o } = await api.checkout({ nonce: snap.nonce, paymentMethod: method.paymentMethod, intentApp: method.intentApp })
+      const { order: o } = await api.checkout({ nonce: snap.nonce, paymentMethod: method.paymentMethod, intentApp: method.intentApp, qr: method.qr })
       setOrder(o)
       rememberOrder(o, snap.cart)
       if (o.status === 'PENDING_PAYMENT' && o.paasId) return pollUpi(o)
@@ -102,8 +110,17 @@ export function OrderSheet({ onClose }: { onClose: (placed?: boolean) => void })
           </div>
           <div className="warn">Orders can’t be cancelled from here once placed.</div>
         </>}
-        {stage === 'paying' && order?.upiIntentUrl && <a className="btn accent" href={order.upiIntentUrl}>Open your UPI app to pay</a>}
-        {stage === 'paying' && <div className="sub"><span className="spin" /> Waiting for the payment to complete…</div>}
+        {stage === 'paying' && order && <div className="card" style={{ background: 'var(--accent-soft)', border: 0 }}>
+          <b>Pay ₹{order.cartTotal ?? cart?.total} with UPI</b>
+          <div className="sub">{method?.qr && !isPhone()
+            ? 'Open Swiggy’s payment page and scan the QR code with any UPI app on your phone.'
+            : 'Open your UPI app and approve the payment. The order is placed once Swiggy receives it.'}</div>
+          <div className="row">
+            {order.upiIntentUrl && isPhone() && !method?.qr && <a className="btn accent" href={order.upiIntentUrl}>Open {method?.label.replace('UPI · ', '')}</a>}
+            {order.bridgeUrl && <a className="btn accent" href={order.bridgeUrl} target="_blank" rel="noreferrer">{method?.qr && !isPhone() ? 'Show payment QR' : 'Open payment page'}</a>}
+          </div>
+          <div className="sub"><span className="spin" /> Waiting for the payment… Don’t close this screen.</div>
+        </div>}
         {err && <div className="sub missing">{err}</div>}
         <div className="row" style={{ justifyContent: 'flex-end' }}>
           <button className="btn ghost" disabled={stage === 'placing' || stage === 'paying'} onClick={() => onClose()}>Cancel</button>

@@ -96,9 +96,11 @@ const ACTIONS: Record<string, { method: 'GET' | 'POST'; run: (req: VercelRequest
     method: 'GET',
     run: () => withSwiggy(async call => {
       type M = { id: string; displayName?: string; iconUrl?: string; enabled?: boolean; kind?: string }
-      const d = await call<{ platforms?: { mobile?: { methods: M[] } }; cod?: { available: boolean; displayName: string }; swiggyMoney?: { available: boolean; displayName: string } }>('get_payment_options')
+      const d = await call<{ platforms?: { mobile?: { methods: M[] }; desktop?: { methods: M[] } }; cod?: { available: boolean; displayName: string }; swiggyMoney?: { available: boolean; displayName: string } }>('get_payment_options')
+      const qr = (d.platforms?.desktop?.methods ?? []).find(m => m.kind === 'qr' && m.enabled !== false)
       return {
         upi: (d.platforms?.mobile?.methods ?? []).filter(m => m.enabled !== false).map(m => ({ id: m.id, name: m.displayName ?? m.id, iconUrl: m.iconUrl ?? null })),
+        qr: qr ? { name: qr.displayName ?? 'Scan QR' } : null,
         cod: d.cod?.available ? { name: d.cod.displayName || 'Cash on delivery' } : null,
         swiggyMoney: d.swiggyMoney?.available ? { name: d.swiggyMoney.displayName || 'Swiggy Money' } : null
       }
@@ -121,11 +123,13 @@ const ACTIONS: Record<string, { method: 'GET' | 'POST'; run: (req: VercelRequest
     method: 'POST',
     run: async req => {
       if (process.env.ALLOW_CHECKOUT !== 'true') throw new HttpError(403, 'Ordering is switched off on this server.', { reason: 'ordering_off' })
-      const b = body<{ nonce: unknown; paymentMethod: unknown; intentApp?: unknown }>(req)
+      const b = body<{ nonce: unknown; paymentMethod: unknown; intentApp?: unknown; qr?: unknown }>(req)
       const nonce = str(b.nonce, 'confirmation')
       const paymentMethod = str(b.paymentMethod, 'payment method', 20)
       if (!['UPI', 'Cash', 'SwiggyPay'].includes(paymentMethod)) throw new HttpError(400, 'Invalid payment method')
-      const intentApp = paymentMethod === 'UPI' ? str(b.intentApp, 'UPI app', 120) : undefined
+      // UPI is either a specific app (intentApp, phones) or Swiggy's scan-QR page (generateUPIQR, laptops).
+      const qr = paymentMethod === 'UPI' && b.qr === true
+      const intentApp = paymentMethod === 'UPI' && !qr ? str(b.intentApp, 'UPI app', 120) : undefined
       const snap = await redis().getdel<{ total: number; count: number }>(KEYS.nonce(nonce))
       if (!snap) throw new HttpError(409, 'This confirmation expired. Review the order again.', { reason: 'stale' })
       const { id } = await selectedAddress()
@@ -135,8 +139,8 @@ const ACTIONS: Record<string, { method: 'GET' | 'POST'; run: (req: VercelRequest
         if (problem) throw new HttpError(409, problem, { reason: 'stale', cart: live })
         try {
           // Never retried: checkout is not idempotent.
-          const order = await call<Record<string, unknown>>('checkout', { addressId: id, paymentMethod, ...(intentApp ? { intentApp } : {}) }, { retry: false })
-          return { order: pick(order, ['orderId', 'status', 'paymentMethod', 'cartTotal', 'paasId', 'transactionId', 'upiIntentUrl', 'bridgeUrl', 'pollingIntervalInMs', 'maxTimeToPollForInMs']) }
+          const order = await call<Record<string, unknown>>('checkout', { addressId: id, paymentMethod, ...(intentApp ? { intentApp } : {}), ...(qr ? { generateUPIQR: true } : {}) }, { retry: false })
+          return { order: pick(order, ['orderId', 'status', 'paymentMethod', 'cartTotal', 'paasId', 'transactionId', 'upiIntentUrl', 'bridgeUrl', 'isQrFlow', 'pollingIntervalInMs', 'maxTimeToPollForInMs']) }
         } catch (e) {
           if (e instanceof SwiggyError && e.kind === 'upstream') {
             // Unclear outcome: look for an order instead of retrying.

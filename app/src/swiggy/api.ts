@@ -35,8 +35,8 @@ export interface Cart {
   empty: boolean; address: Address | null; items: CartItem[]; bill: { label: string; value: string }[]; toPay: string; total: number
   warnings: string[]; unserviceable: CartItem[]; removed: CartItem[]; capped: { spinId: string; itemName: string; requestedQuantity: number; cappedQuantity: number; reason?: string }[]
 }
-export interface PaymentOptions { upi: { id: string; name: string; iconUrl: string | null }[]; cod: { name: string } | null; swiggyMoney: { name: string } | null }
-export interface PlacedOrder { orderId: string; status: string; paymentMethod: string; cartTotal?: number; paasId?: string; transactionId?: string; upiIntentUrl?: string; bridgeUrl?: string; pollingIntervalInMs?: number; maxTimeToPollForInMs?: number }
+export interface PaymentOptions { upi: { id: string; name: string; iconUrl: string | null }[]; qr: { name: string } | null; cod: { name: string } | null; swiggyMoney: { name: string } | null }
+export interface PlacedOrder { orderId: string; status: string; paymentMethod: string; cartTotal?: number; paasId?: string; transactionId?: string; upiIntentUrl?: string; bridgeUrl?: string; isQrFlow?: boolean; pollingIntervalInMs?: number; maxTimeToPollForInMs?: number }
 export interface PastOrder { orderId: string; status: string; createdAt: string; isActive: boolean; total: number; items: { name: string; quantity: number; itemId?: string | null }[] }
 
 export const api = {
@@ -50,8 +50,8 @@ export const api = {
   setCart: (items: { spinId: string; skuId: string; quantity: number }[]) => req<{ cart: Cart }>('/api/swiggy/cart-set', { method: 'POST', body: { items } }),
   paymentOptions: () => req<PaymentOptions>('/api/swiggy/payment-options'),
   confirmNonce: () => req<{ nonce: string; cart: Cart }>('/api/swiggy/confirm-nonce', { method: 'POST' }),
-  checkout: (b: { nonce: string; paymentMethod: string; intentApp?: string }) => req<{ order: PlacedOrder }>('/api/swiggy/checkout', { method: 'POST', body: b }),
-  paymentStatus: (b: { paasId: string; orderId: string }) => req<{ status: { status?: string; terminal?: boolean; isTerminalSuccess?: boolean; isTerminalFailure?: boolean } }>('/api/swiggy/payment-status', { method: 'POST', body: b }),
+  checkout: (b: { nonce: string; paymentMethod: string; intentApp?: string; qr?: boolean }) => req<{ order: PlacedOrder }>('/api/swiggy/checkout', { method: 'POST', body: b }),
+  paymentStatus: (b: { paasId: string; orderId: string }) => req<{ status: { status?: string; orderStatus?: string; terminal?: boolean; isTerminalSuccess?: boolean; isTerminalFailure?: boolean } }>('/api/swiggy/payment-status', { method: 'POST', body: b }),
   confirmOrder: (b: { paasId: string; orderId: string; transactionId?: string }) => req<{ result: { result?: string; orderStatus?: string } }>('/api/swiggy/confirm-order', { method: 'POST', body: b }),
   orders: () => req<{ orders: PastOrder[] }>('/api/swiggy/orders'),
   orderDetails: (id: string) => req<{ order: { orderId: string; status: string; items: { name: string; quantity: number }[] } }>(`/api/swiggy/order-details?id=${encodeURIComponent(id)}`),
