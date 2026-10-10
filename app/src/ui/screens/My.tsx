@@ -4,6 +4,7 @@ import { exportBackup, importBackup, importRecipes } from '../../store/db'
 import { usePhotoUrl } from '../../store/hooks'
 import { useApp } from '../AppContext'
 import { Art, Section } from '../components'
+import { SwiggyCard } from '../swiggy/SwiggyCard'
 
 function Entry({ j }: { j: JournalEntry }) {
   const { recipes, openDish } = useApp()
@@ -64,6 +65,7 @@ export function My() {
     {(t.liked.length > 0 || t.meh.length > 0) && <Section title="Your taste so far" sub="from your ratings">
       <div className="taste">{t.liked.map(x => <span key={x}>loves {x}</span>)}{t.meh.map(x => <span key={x} className="meh">meh on {x}</span>)}</div>
     </Section>}
+    <Section title="Instamart"><SwiggyCard /></Section>
     <Section title="Cooked" sub="saved on this phone">
       {journal.length
         ? <div className="journal">{journal.slice(0, 60).map(j => <Entry key={j.id} j={j} />)}</div>

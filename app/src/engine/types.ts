@@ -65,11 +65,35 @@ export interface PantryItem {
   unsure?: boolean
 }
 
+/** An Instamart product you picked for an ingredient (remembered for next time). */
+export interface SkuPick {
+  spinId: string
+  skuId: string
+  name: string
+  quantityDescription: string
+  price: number
+  imageUrl: string | null
+  /** How many packs to order. */
+  qty: number
+}
+
+/** An order placed from the app, kept until it's delivered and added to the pantry. */
+export interface PendingOrder {
+  orderId: string
+  at: number
+  total: number
+  lines: { id: string; packs: number; quantityDescription: string }[]
+}
+
 export interface Kitchen {
   items: Record<string, PantryItem>
   equipment: string[]
   /** Shopping list: ingredient ids, in the order they were added. */
   list: string[]
+  skuMap?: Record<string, SkuPick>
+  pendingOrders?: PendingOrder[]
+  /** Instamart order ids already added to the pantry. */
+  importedOrders?: string[]
 }
 
 export interface JournalEntry {

@@ -1,12 +1,19 @@
 import { restock } from '../../engine'
 import { updateKitchen } from '../../store/db'
+import { useSwiggy } from '../../swiggy/useSwiggy'
 import { useApp } from '../AppContext'
+import { InstamartList } from '../swiggy/InstamartList'
 import { Icon } from '../components'
 
 const instamartSearch = (q: string) => `https://www.swiggy.com/instamart/search?query=${encodeURIComponent(q)}`
 
 export function List() {
-  const { kitchen, catalog, ctx, toast } = useApp()
+  const { ready } = useSwiggy()
+  return ready ? <InstamartList /> : <ShoppingList />
+}
+
+function ShoppingList() {
+  const { kitchen, catalog, ctx, toast, setTab } = useApp()
   const list = kitchen.list.filter(id => catalog[id])
   const total = list.reduce((a, i) => a + (catalog[i].sku?.price ?? 0), 0)
 
@@ -45,7 +52,7 @@ export function List() {
         <button className="btn ghost" style={{ flex: 1 }} onClick={copy}>{Icon.copy}Copy list</button>
         <button className="btn accent" style={{ flex: 1 }} onClick={() => bought(list)}>{Icon.check}Got everything</button>
       </div>
-      <p className="sub">“Got it” adds one pack to your pantry with a fresh expiry date. In Phase 2 this list becomes a real Instamart cart: live prices and stock from search_products, then checkout after your confirmation.</p>
+      <p className="sub">“Got it” adds one pack to your pantry with a fresh expiry date. <button className="linkbtn" onClick={() => setTab('my')}>Connect Instamart</button> to see live prices and send this list straight to your cart.</p>
     </div>
   </>
 }

@@ -2,6 +2,7 @@ import { addDays, daysBetween, type PantryItem } from '../../engine'
 import { resetKitchen, updateKitchen } from '../../store/db'
 import { useApp } from '../AppContext'
 import { Section } from '../components'
+import { OrdersSync } from '../swiggy/OrdersSync'
 
 const CATS: Record<string, string> = { fridge: 'Fridge', fresh: 'Fresh produce', freezer: 'Freezer', shelf: 'Grains & shelf', spices: 'Spices', sauces: 'Sauces & oils' }
 const LEVELS = ['Out', 'Low', 'Half', 'Full']
@@ -53,10 +54,7 @@ export function Pantry() {
       <div className="stat"><b style={{ color: 'var(--low)' }}>{soon}</b><span>use in 2 days</span></div>
       <div className="stat"><b style={{ color: 'var(--miss)' }}>{ids.filter(i => amount(i) === 0).length}</b><span>out</span></div>
     </div>
-    <div className="card" style={{ marginTop: 12, background: 'var(--surface-2)', borderStyle: 'dashed' }}>
-      <div className="row" style={{ justifyContent: 'space-between' }}><b style={{ fontSize: 13.5 }}>Sync from Instamart orders</b><span className="sim">Phase 2</span></div>
-      <div className="sub">Once Swiggy access is set up, deliveries land here automatically. Until then, cooking a dish deducts what it used, and ticking items off your list restocks them.</div>
-    </div>
+    <OrdersSync />
     {unsure.length > 0 && <Section title="Still have these?" sub={`${unsure.length} to confirm`}><div className="group">{unsure.map(id => <Row key={id} id={id} />)}</div></Section>}
     {Object.entries(CATS).map(([c, label]) => {
       const rows = ids.filter(i => catalog[i].cat === c && !kitchen.items[i]?.unsure)

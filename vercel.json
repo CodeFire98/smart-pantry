@@ -1,7 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm --prefix app ci",
+  "installCommand": "npm ci && npm --prefix app ci",
   "buildCommand": "npm --prefix app run build",
+  "devCommand": "npm --prefix app run dev -- --port $PORT --strictPort",
   "outputDirectory": "app/dist",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/swiggy/[action].ts": { "maxDuration": 30 }
+  }
 }

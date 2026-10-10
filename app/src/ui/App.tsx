@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { SwiggyProvider, useSwiggy } from '../swiggy/useSwiggy'
 import { AppProvider, useApp, type Tab } from './AppContext'
 import { Ask } from './screens/Ask'
 import { DishDetail } from './screens/DishDetail'
@@ -15,9 +16,20 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   { id: 'my', label: 'My', icon: <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><path d="M12 3v2M12 19v2" /></svg> }
 ]
 
-function Shell({ toast }: { toast: string | null }) {
-  const { tab, setTab, detail, recipes, kitchen, openDish } = useApp()
+function Shell({ toastMsg }: { toastMsg: string | null }) {
+  const { tab, setTab, detail, recipes, kitchen, openDish, toast } = useApp()
+  const { refresh } = useSwiggy()
   const scroller = useRef<HTMLDivElement>(null)
+  // Coming back from Swiggy's login page: /#swiggy=connected | error&msg=… | login
+  useEffect(() => {
+    const h = new URLSearchParams(location.hash.slice(1))
+    const s = h.get('swiggy')
+    if (!s) return
+    history.replaceState(null, '', location.pathname)
+    setTab('my')
+    refresh()
+    toast(s === 'connected' ? 'Instamart connected' : s === 'login' ? 'Unlock the app with your passcode first.' : h.get('msg') ?? 'Swiggy login didn’t finish.')
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { scroller.current?.scrollTo(0, 0) }, [tab])
   const dish = detail ? recipes.find(r => r.id === detail) : null
   const Screen = { today: Today, ask: Ask, pantry: Pantry, list: List, my: My }[tab]
@@ -29,10 +41,10 @@ function Shell({ toast }: { toast: string | null }) {
       </button>)}
     </nav>
     {dish && <DishDetail key={dish.id} recipe={dish} />}
-    <div className="toast" hidden={!toast} role="status">{toast}</div>
+    <div className="toast" hidden={!toastMsg} role="status">{toastMsg}</div>
   </div>
 }
 
 export function App() {
-  return <AppProvider>{(ready, toast) => ready ? <Shell toast={toast} /> : <div className="phone"><div className="scroll"><div className="empty" style={{ marginTop: 40 }}>Opening your kitchen…</div></div></div>}</AppProvider>
+  return <SwiggyProvider><AppProvider>{(ready, toast) => ready ? <Shell toastMsg={toast} /> : <div className="phone"><div className="scroll"><div className="empty" style={{ marginTop: 40 }}>Opening your kitchen…</div></div></div>}</AppProvider></SwiggyProvider>
 }
