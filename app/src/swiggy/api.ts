@@ -26,7 +26,7 @@ async function req<T>(path: string, init?: { method?: string; body?: unknown }):
   return data as T
 }
 
-export interface Address { id: string; label: string; line?: string }
+export interface Address { id: string; label: string; line?: string; isDefault?: boolean }
 export interface Status { authed: boolean; swiggy?: { connected: boolean; expiresAt: number | null; address: Address | null }; ordering?: boolean }
 export interface Variation { spinId: string; skuId: string; name: string; quantityDescription: string; price: number; mrp: number; inStock: boolean; imageUrl: string | null; maxQuantity: number | null }
 export interface Product { name: string; brand: string; productId: string; variations: Variation[] }
@@ -37,7 +37,7 @@ export interface Cart {
 }
 export interface PaymentOptions { upi: { id: string; name: string; iconUrl: string | null }[]; cod: { name: string } | null; swiggyMoney: { name: string } | null }
 export interface PlacedOrder { orderId: string; status: string; paymentMethod: string; cartTotal?: number; paasId?: string; transactionId?: string; upiIntentUrl?: string; bridgeUrl?: string; pollingIntervalInMs?: number; maxTimeToPollForInMs?: number }
-export interface PastOrder { orderId: string; status: string; createdAt: string; isActive: boolean; total: number; items: { name: string; quantity: number }[] }
+export interface PastOrder { orderId: string; status: string; createdAt: string; isActive: boolean; total: number; items: { name: string; quantity: number; itemId?: string | null }[] }
 
 export const api = {
   status: () => req<Status>('/api/session'),

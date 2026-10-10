@@ -14,17 +14,34 @@ async function selectedAddress(): Promise<Address> {
   return a
 }
 
-const liveCart = async (call: Call) => trimCart(await call<RawCart>('get_cart'))
+/** Swiggy answers get_cart with an error (not an empty cart) when nothing is in it yet, so treat that as empty. */
+async function liveCart(call: Call) {
+  try { return trimCart(await call<RawCart>('get_cart')) } catch (e) {
+    if (e instanceof SwiggyError && e.kind === 'domain') return trimCart({ cartAbsent: true })
+    throw e
+  }
+}
 
 const ACTIONS: Record<string, { method: 'GET' | 'POST'; run: (req: VercelRequest) => Promise<unknown> }> = {
   addresses: {
     method: 'GET',
     run: () => withSwiggy(async call => {
-      const d = await call<{ addresses: Array<{ id: string; addressLine: string; addressTag?: string; addressCategory?: string }> }>('get_addresses', { pageSize: 10 })
-      return {
-        addresses: (d.addresses ?? []).map(a => ({ id: a.id, label: a.addressTag || a.addressCategory || 'Address', line: a.addressLine })),
-        selected: await redis().get<Address>(KEYS.address)
+      type Page = {
+        addresses?: Array<{ id: string; addressLine: string; addressTag?: string; addressCategory?: string }>
+        pagination?: { hasMore?: boolean }
+        resolution?: { defaultAddressId?: string }
       }
+      const all: NonNullable<Page['addresses']> = []
+      let defaultId: string | undefined
+      for (let page = 1; page <= 5; page++) {
+        const d = await call<Page>('get_addresses', { page, pageSize: 10 })
+        all.push(...(d.addresses ?? []))
+        defaultId ??= d.resolution?.defaultAddressId
+        if (!d.pagination?.hasMore) break
+      }
+      const addresses = all.map(a => ({ id: a.id, label: a.addressTag || a.addressCategory || 'Address', line: a.addressLine, isDefault: a.id === defaultId }))
+      addresses.sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
+      return { addresses, selected: await redis().get<Address>(KEYS.address) }
     })
   },
 
@@ -153,9 +170,9 @@ const ACTIONS: Record<string, { method: 'GET' | 'POST'; run: (req: VercelRequest
   orders: {
     method: 'GET',
     run: () => withSwiggy(async call => {
-      type O = { orderId: string; status: string; createdAt: string; isActive: boolean; totalAmount: number; orderType?: string; items?: Array<{ name: string; quantity: number }> }
+      type O = { orderId: string; status: string; createdAt: string; isActive: boolean; totalAmount: number; orderType?: string; items?: Array<{ name: string; quantity: number; itemId?: string }> }
       const d = await call<{ orders?: O[] }>('get_orders', { count: 10 })
-      return { orders: (d.orders ?? []).map(o => ({ orderId: o.orderId, status: o.status, createdAt: o.createdAt, isActive: o.isActive, total: o.totalAmount, items: o.items ?? [] })) }
+      return { orders: (d.orders ?? []).map(o => ({ orderId: o.orderId, status: o.status, createdAt: o.createdAt, isActive: o.isActive, total: o.totalAmount, items: (o.items ?? []).map(i => ({ name: i.name, quantity: i.quantity, itemId: i.itemId ?? null })) })) }
     })
   },
 

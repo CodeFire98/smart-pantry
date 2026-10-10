@@ -3,7 +3,7 @@ import { matchOrderItem, packAmount, restockAmounts } from '../../engine'
 import { updateKitchen } from '../../store/db'
 import { useApp } from '../AppContext'
 
-export interface ImportOrder { orderId: string; label: string; items: { name: string; quantity: number }[] }
+export interface ImportOrder { orderId: string; label: string; items: { name: string; quantity: number; itemId?: string | null }[] }
 
 interface Row { key: string; name: string; packs: number; id: string; amount: number | null; include: boolean }
 
@@ -14,7 +14,7 @@ interface Row { key: string; name: string; packs: number; id: string; amount: nu
 export function ImportSheet({ orders, onClose }: { orders: ImportOrder[]; onClose: () => void }) {
   const { kitchen, catalog, ctx, toast } = useApp()
   const [rows, setRows] = useState<Row[]>(() => orders.flatMap(o => o.items.map((it, i) => {
-    const m = matchOrderItem(it.name, kitchen, catalog)
+    const m = matchOrderItem(it.name, kitchen, catalog, it.itemId)
     const pick = m ? kitchen.skuMap?.[m.id] : undefined
     const per = m ? packAmount(m.id, pick?.name.toLowerCase() === it.name.toLowerCase() ? pick.quantityDescription : it.name, catalog) : null
     return { key: `${o.orderId}:${i}`, name: it.name, packs: it.quantity, id: m?.id ?? '', amount: per != null ? per * it.quantity : null, include: !!m }

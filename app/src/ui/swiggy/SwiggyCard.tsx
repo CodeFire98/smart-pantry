@@ -57,7 +57,7 @@ export function SwiggyCard() {
           {addresses === null ? <div className="sub"><span className="spin" /> Loading your addresses…</div>
             : addresses.length === 0 ? <div className="sub">No saved addresses. Add one in the Swiggy app, then reload.</div>
             : <div className="group">{addresses.map(a => <div className="prow" key={a.id}>
-                <span className="pname">{a.label}<small>{a.line}</small></span>
+                <span className="pname">{a.label}{a.isDefault && <span className="exp" style={{ color: 'var(--have)', background: 'var(--have-soft)' }}>Swiggy default</span>}<small>{a.line}</small></span>
                 <button className="btn sm ghost" disabled={busy} onClick={() => run(async () => { await api.selectAddress(a); setPicking(false) }, `Delivering to ${a.label}`)}>Use</button>
               </div>)}</div>}
         </>}

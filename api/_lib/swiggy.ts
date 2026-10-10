@@ -154,7 +154,11 @@ interface Envelope { success?: boolean; data?: unknown; message?: string; error?
 
 export function unwrap<T>(res: unknown, tool: string): T {
   const r = res as { structuredContent?: Envelope; content?: Array<{ type: string; text?: string }>; isError?: boolean }
-  let env: Envelope | undefined = r.structuredContent && 'success' in r.structuredContent ? r.structuredContent : undefined
+  const sc = r.structuredContent
+  // Live responses put the payload itself in structuredContent (no {success, data} wrapper), with a
+  // human-readable summary in the text content. The docs describe the wrapped form, so accept both.
+  if (sc && typeof sc === 'object' && !('success' in sc) && !r.isError) return sc as T
+  let env: Envelope | undefined = sc && 'success' in sc ? sc : undefined
   if (!env) {
     const text = r.content?.find(c => c.type === 'text')?.text ?? ''
     try { env = JSON.parse(text) as Envelope } catch { env = r.isError ? { success: false, error: { message: text } } : { success: true, data: text } }

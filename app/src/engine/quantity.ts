@@ -45,12 +45,14 @@ const singular = (w: string) => (w.length > 3 && w.endsWith('es') && !w.endsWith
 const words = (s: string) => s.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).map(singular)
 
 /**
- * Map an Instamart order line to an ingredient. A product you picked before wins; otherwise the ingredient
+ * Map an Instamart order line to an ingredient. A product you picked before (same item id or name) wins; otherwise the ingredient
  * whose name (or id) words all appear in the line, preferring the most specific (most words).
  */
-export function matchOrderItem(name: string, kitchen: Pick<Kitchen, 'skuMap'>, catalog: Catalog): { id: string; via: 'picked' | 'name' } | null {
+export function matchOrderItem(name: string, kitchen: Pick<Kitchen, 'skuMap'>, catalog: Catalog, itemId?: string | null): { id: string; via: 'picked' | 'name' } | null {
   const lower = name.toLowerCase().trim()
-  for (const [id, pick] of Object.entries(kitchen.skuMap ?? {})) if (pick.name.toLowerCase().trim() === lower) return { id, via: 'picked' }
+  for (const [id, pick] of Object.entries(kitchen.skuMap ?? {})) {
+    if ((itemId && (pick.spinId === itemId || pick.skuId === itemId)) || pick.name.toLowerCase().trim() === lower) return { id, via: 'picked' }
+  }
   const have = new Set(words(name))
   let best: { id: string; score: number } | null = null
   for (const [id, ing] of Object.entries(catalog)) {

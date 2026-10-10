@@ -64,6 +64,11 @@ describe('envelope', () => {
   it('unwraps success from structured or text content', () => {
     expect(unwrap({ structuredContent: { success: true, data: { x: 1 } } }, 't')).toEqual({ x: 1 })
     expect(unwrap({ content: [{ type: 'text', text: JSON.stringify({ success: true, data: [1] }) }] }, 't')).toEqual([1])
+    // Live shape: payload directly in structuredContent, prose in the text content.
+    expect(unwrap({ structuredContent: { addresses: [{ id: 'a' }] }, content: [{ type: 'text', text: 'You have 1 address' }] }, 't')).toEqual({ addresses: [{ id: 'a' }] })
+  })
+  it('treats an isError structured envelope as a failure', () => {
+    expect(() => unwrap({ isError: true, structuredContent: { success: false, error: { message: 'No delivery addresses found.' } } }, 'get_cart')).toThrow('No delivery addresses found.')
   })
   it('maps failures to input or domain errors', () => {
     const fail = (message: string) => ({ content: [{ type: 'text', text: JSON.stringify({ success: false, error: { message } }) }] })

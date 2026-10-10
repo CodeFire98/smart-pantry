@@ -55,3 +55,10 @@ describe('restockAmounts', () => {
     expect(out.list).toEqual(['capsicum'])
   })
 })
+
+describe('matchOrderItem by item id', () => {
+  it('uses the Instamart item id of a product you picked', () => {
+    const k = { skuMap: { paneer: { spinId: 'SP1', skuId: 'SK1', name: 'Milky Mist Paneer', quantityDescription: '200 g', price: 109, imageUrl: null, qty: 1 } } }
+    expect(matchOrderItem('Some Renamed Product', k, CATALOG, 'SK1')).toEqual({ id: 'paneer', via: 'picked' })
+  })
+})
