@@ -25,4 +25,10 @@ A phone-first pantry app. It keeps track of what's in your fridge and pantry, su
 cd app && npm install && npm run dev
 ```
 
-Tests: `npm test`. Production build: `npm run build`.
+Tests: `npm test`. Typecheck: `npm run typecheck`. Production build: `npm run build`.
+
+## Deploy (Vercel)
+
+1. Go to vercel.com and choose **Add New → Project**, then import `CodeFire98/smart-pantry`. Leave the root directory as the repo root; `vercel.json` already builds `app/` and serves `app/dist`.
+2. Open the deployment URL on your phone and choose **Add to Home Screen**. The app works offline.
+3. Data (pantry, journal and photos) is stored on the phone in IndexedDB. Use **My → Download backup** now and then.
