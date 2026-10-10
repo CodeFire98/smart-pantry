@@ -31,7 +31,7 @@ export function InstamartList() {
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setErr(null)
-    try { await fn() } catch (e) { setErr(explain(e)) } finally { setBusy(false) }
+    try { await fn() } catch (e) { setErr(e instanceof Error && !('status' in e) ? e.message : explain(e)) } finally { setBusy(false) }
   }
   const send = () => run(async () => {
     const r = await api.setCart(ready.map(id => ({ spinId: sku[id].spinId, skuId: sku[id].skuId, quantity: sku[id].qty })))
@@ -40,10 +40,16 @@ export function InstamartList() {
   })
   const refreshCart = () => run(async () => setCart((await api.cart()).cart))
 
+  // Orders placed here already know each product and pack size. get_order_details is beta-only on Swiggy,
+  // so fall back to the order-history entry for anything we didn't record.
   const delivered = (orderId: string) => run(async () => {
     const pending = kitchen.pendingOrders?.find(p => p.orderId === orderId)
-    const { order } = await api.orderDetails(orderId)
-    setImporting([{ orderId, label: `Order ${orderId}`, items: order.items.length ? order.items : (pending?.lines ?? []).map(l => ({ name: sku[l.id]?.name ?? catalog[l.id].name, quantity: l.packs })) }])
+    let items: ImportOrder['items'] = (pending?.lines ?? []).filter(l => catalog[l.id]).map(l => ({
+      name: sku[l.id]?.name ?? catalog[l.id].name, quantity: l.packs, id: l.id, quantityDescription: l.quantityDescription
+    }))
+    if (!items.length) items = (await api.orders()).orders.find(o => o.orderId === orderId)?.items ?? []
+    if (!items.length) throw new Error('Couldn’t find what was in this order. Add the items from Pantry → Instamart orders instead.')
+    setImporting([{ orderId, label: 'Your Instamart order', items }])
   })
   const checkDelivery = (orderId: string) => run(async () => {
     const { status: s } = await api.deliveryStatus(orderId)

@@ -3,7 +3,8 @@ import { matchOrderItem, packAmount, restockAmounts } from '../../engine'
 import { updateKitchen } from '../../store/db'
 import { useApp } from '../AppContext'
 
-export interface ImportOrder { orderId: string; label: string; items: { name: string; quantity: number; itemId?: string | null }[] }
+/** An order line to add. `id` + `quantityDescription` are known exactly for orders placed from this app. */
+export interface ImportOrder { orderId: string; label: string; items: { name: string; quantity: number; itemId?: string | null; id?: string; quantityDescription?: string }[] }
 
 interface Row { key: string; name: string; packs: number; id: string; amount: number | null; include: boolean }
 
@@ -14,9 +15,10 @@ interface Row { key: string; name: string; packs: number; id: string; amount: nu
 export function ImportSheet({ orders, onClose }: { orders: ImportOrder[]; onClose: () => void }) {
   const { kitchen, catalog, ctx, toast } = useApp()
   const [rows, setRows] = useState<Row[]>(() => orders.flatMap(o => o.items.map((it, i) => {
-    const m = matchOrderItem(it.name, kitchen, catalog, it.itemId)
+    const m = it.id && catalog[it.id] ? { id: it.id } : matchOrderItem(it.name, kitchen, catalog, it.itemId)
     const pick = m ? kitchen.skuMap?.[m.id] : undefined
-    const per = m ? packAmount(m.id, pick?.name.toLowerCase() === it.name.toLowerCase() ? pick.quantityDescription : it.name, catalog) : null
+    const desc = it.quantityDescription ?? (pick?.name.toLowerCase() === it.name.toLowerCase() ? pick.quantityDescription : it.name)
+    const per = m ? packAmount(m.id, desc, catalog) : null
     return { key: `${o.orderId}:${i}`, name: it.name, packs: it.quantity, id: m?.id ?? '', amount: per != null ? per * it.quantity : null, include: !!m }
   })))
   const ids = Object.keys(catalog).sort((a, b) => catalog[a].name.localeCompare(catalog[b].name))
