@@ -15,6 +15,8 @@ interface AppState {
   journal: JournalEntry[]
   catalog: Catalog
   recipes: Recipe[]
+  hiddenRecipes: Recipe[]
+  editedRecipes: Set<string>
   tab: Tab
   setTab: (t: Tab) => void
   meal: Meal
@@ -38,7 +40,7 @@ const Ctx = createContext<AppState | null>(null)
 export const useApp = () => useContext(Ctx)!
 
 export function AppProvider({ children }: { children: (ready: boolean, toastMsg: string | null) => ReactNode }) {
-  const { kitchen, journal, catalog, recipes } = useData()
+  const { kitchen, journal, catalog, recipes, hiddenRecipes, editedRecipes } = useData()
   const [tab, setTab] = useState<Tab>('today')
   const [meal, setMeal] = useState<Meal>(mealNow())
   const [energy, setEnergy] = useState<Energy>(2)
@@ -64,11 +66,11 @@ export function AppProvider({ children }: { children: (ready: boolean, toastMsg:
     if (!kitchen) return null
     const ctx: Context = { catalog, kitchen, journal, meal, energy, moods, today: isoDate(), now: Date.now() }
     return {
-      kitchen, journal, catalog, recipes, tab, setTab, meal, setMeal, energy, setEnergy, moods,
+      kitchen, journal, catalog, recipes, hiddenRecipes, editedRecipes, tab, setTab, meal, setMeal, energy, setEnergy, moods,
       toggleMood: m => setMoods(ms => (ms.includes(m) ? ms.filter(x => x !== m) : [...ms, m])),
       query, setQuery, detail, openDish, ctx, toast, addToList, name
     }
-  }, [kitchen, journal, catalog, recipes, tab, meal, energy, moods, query, detail, toast, addToList, name])
+  }, [kitchen, journal, catalog, recipes, hiddenRecipes, editedRecipes, tab, meal, energy, moods, query, detail, toast, addToList, name])
 
   return <Ctx.Provider value={value}>{children(!!value, toastMsg)}</Ctx.Provider>
 }

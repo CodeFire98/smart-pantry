@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { addDays, daysBetween, stepFor, type Catalog, type Kitchen, type PantryItem } from '../../engine'
 import { resetKitchen, updateKitchen } from '../../store/db'
 import { useApp } from '../AppContext'
 import { Icon, Section } from '../components'
-import { AddItemSheet, CATS } from '../AddItemSheet'
+import { CATS, ItemSheet } from '../ItemSheet'
 import { OrdersSync } from '../swiggy/OrdersSync'
 
 const LEVELS = ['Out', 'Low', 'Half', 'Full']
@@ -37,36 +37,46 @@ function PantryRow({ id, kitchen, catalog, today, onEditCustom }: { id: string; 
   const onList = kitchen.list.includes(id)
   const kind = ing.kind === 'stp' ? 'staple · stays stocked until you mark it out' : ing.unit ? `± ${fmt(step, ing.unit)}${ing.unit === 'pc' ? ' at a time' : ''}` : 'tracked by level'
   const commit = () => { if (typing != null && typing.trim() !== '' && !isNaN(Number(typing))) setQty(id, Number(typing), catalog, today); setTyping(null) }
+  // Feedback: bump on every change, red flash when it runs out, shake when − is pressed at Out.
+  const prev = useRef(q)
+  const [flash, setFlash] = useState(false)
+  const [shake, setShake] = useState(0)
+  useEffect(() => {
+    if (prev.current > 0 && q === 0) { setFlash(true); const t = setTimeout(() => setFlash(false), 1100); prev.current = q; return () => clearTimeout(t) }
+    prev.current = q
+  }, [q])
+  const less = () => (q <= 0 ? setShake(n => n + 1) : setQty(id, { delta: -step }, catalog, today))
 
-  return <div className="prow">
+  return <div className={`prow${flash ? ' just-out' : ''}`}>
     <span className="pname">
-      {custom ? <button className="linkbtn plain" onClick={() => onEditCustom(id)}>{ing.name}</button> : ing.name}
+      <button className="linkbtn plain" onClick={() => onEditCustom(id)} title="Edit item">{ing.name}</button>
       {q > 0 && d != null && d <= 3 && <span className={`exp ${d <= 1 ? 'hot' : ''}`}>{d <= 0 ? 'use today' : d === 1 ? 'tomorrow' : `${d} days`}</span>}
       <small>{it.unsure ? 'you weren’t sure, still have it?' : custom ? `added by you · ${kind}` : kind}
-        {q === 0 && !it.unsure && (onList ? ' · on your list' : <> · <button className="linkbtn" onClick={() => addToList([id])}>+ List</button></>)}</small>
+        {q === 0 && !it.unsure && (onList ? ' · on your list' : <> · <button className={`linkbtn${flash ? ' pulse' : ''}`} onClick={() => addToList([id])}>+ List</button></>)}</small>
     </span>
     {it.unsure
       ? <span className="yesno">
           <button className="btn sm ghost" onClick={() => editItem(id, x => { delete x.unsure })}>Have it</button>
           <button className="btn sm ghost" onClick={() => editItem(id, x => { delete x.unsure; if (ing.unit) x.q = 0; else x.l = 0 })}>Out</button></span>
       : ing.unit
-        ? <span className="stepper">
-            <button onClick={() => setQty(id, { delta: -step }, catalog, today)} aria-label={`${fmt(step, ing.unit)} less ${ing.name}`}>−</button>
+        ? <span className={`stepper${shake ? ' shake' : ''}`} key={`s${shake}`}>
+            <button onClick={less} aria-disabled={q <= 0} aria-label={`${fmt(step, ing.unit)} less ${ing.name}`}>−</button>
             {typing != null
               ? <input className="qty-input" autoFocus inputMode="decimal" value={typing} onChange={e => setTyping(e.target.value)} onBlur={commit}
                   onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setTyping(null) }} aria-label={`Amount of ${ing.name} in ${ing.unit}`} />
-              : <output className={q === 0 ? 'zero' : ''} onClick={() => setTyping(String(q))} title="Tap to type an exact amount" role="button" tabIndex={0}
+              : <output key={q} className={`bump${q === 0 ? ' zero' : ''}`} onClick={() => setTyping(String(q))} title="Tap to type an exact amount" role="button" tabIndex={0}
                   onKeyDown={e => { if (e.key === 'Enter') setTyping(String(q)) }}>{q === 0 ? 'out' : fmt(q, ing.unit)}</output>}
             <button onClick={() => setQty(id, { delta: step }, catalog, today)} aria-label={`${fmt(step, ing.unit)} more ${ing.name}`}>+</button></span>
         : <button className="level" onClick={() => editItem(id, x => { const l = x.l ?? 0; x.l = l === 0 ? 3 : l - 1 })} aria-label={`${ing.name}: ${LEVELS[q]}. Tap to change`}>
-            <span className={`bars l${q}`}><i /><i /><i /></span><span className="lvtext">{LEVELS[q]}</span></button>}
+            <span key={q} className={`bars bump l${q}`}><i /><i /><i /></span><span className="lvtext">{LEVELS[q]}</span></button>}
   </div>
 }
 
 export function Pantry() {
   const { kitchen, catalog, ctx, toast } = useApp()
   const [sheet, setSheet] = useState<{ edit?: string } | null>(null)
-  const ids = Object.keys(catalog).filter(id => kitchen.items[id] || catalog[id].kind !== 'stp' || catalog[id].sku)
+  const ids = Object.keys(catalog).filter(id => !catalog[id].hidden && (kitchen.items[id] || catalog[id].kind !== 'stp' || catalog[id].sku))
+  const hidden = Object.keys(catalog).filter(id => catalog[id].hidden)
   const amount = (id: string) => { const it = kitchen.items[id]; return it ? (catalog[id].unit ? it.q ?? 0 : it.l ?? 0) : 0 }
   const days = (id: string) => { const e = kitchen.items[id]?.exp; return e ? daysBetween(ctx.today, e) : null }
   const unsure = ids.filter(i => kitchen.items[i]?.unsure)
@@ -93,7 +103,10 @@ export function Pantry() {
       return <Section key={c} title={label} sub={`${rows.filter(i => amount(i) > 0).length} of ${rows.length} in stock`}>
         <div className="group">{rows.map(row)}</div></Section>
     })}
-    <p className="sub" style={{ textAlign: 'center', marginTop: 12 }}>Tap an amount to type it exactly.</p>
+    <p className="sub" style={{ textAlign: 'center', marginTop: 12 }}>Tap a name to edit the item, or an amount to type it exactly.</p>
+    {hidden.length > 0 && <Section title="Hidden items" sub="tap to show again">
+      <div className="row">{hidden.map(id => <button key={id} className="chip" onClick={() => setSheet({ edit: id })}>{catalog[id].name}</button>)}</div>
+    </Section>}
     <Section title="Kitchen equipment" sub="versions needing gear you don't have are skipped">
       <div className="row">{EQUIPMENT.map(e => <button key={e} className="toggle" aria-pressed={kitchen.equipment.includes(e)}
         onClick={() => updateKitchen(k => ({ ...k, equipment: k.equipment.includes(e) ? k.equipment.filter(x => x !== e) : [...k.equipment, e] }))}>{e}</button>)}</div>
@@ -101,7 +114,7 @@ export function Pantry() {
     <div className="row" style={{ marginTop: 24, justifyContent: 'center' }}>
       <ResetButton onReset={() => { resetKitchen(); toast('Pantry reset to your starting list') }} />
     </div>
-    {sheet && <AddItemSheet editId={sheet.edit} onClose={() => setSheet(null)} />}
+    {sheet && <ItemSheet key={sheet.edit ?? 'new'} editId={sheet.edit} onClose={() => setSheet(null)} />}
   </>
 }
 

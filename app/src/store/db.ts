@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import { CATALOG, RECIPES, RecipeSchema, deduct, isoDate, kitchenFromSeed, stampKitchen, type Catalog, type JournalEntry, type Kitchen, type Recipe } from '../engine'
+import { CATALOG, RECIPES, RecipeSchema, deduct, isoDate, kitchenFromSeed, resolveRecipes, stampKitchen, type Catalog, type JournalEntry, type Kitchen, type Recipe, type RecipeRecord } from '../engine'
 import { notifyChange } from './changes'
 
 interface KV { key: string; value: unknown }
@@ -9,7 +9,7 @@ class PantryDB extends Dexie {
   kv!: Table<KV, string>
   journal!: Table<JournalEntry, number>
   photos!: Table<Photo, number>
-  recipes!: Table<Recipe, string>
+  recipes!: Table<RecipeRecord, string>
   constructor() {
     super('smart-pantry')
     this.version(1).stores({ kv: 'key', journal: '++id, recipeId, at', photos: '++id', recipes: 'id' })
@@ -63,8 +63,19 @@ export async function resetKitchen(): Promise<void> {
 }
 
 /** Built-in catalog + pantry items you added + ingredients introduced by recipes you imported. */
-export function catalogWith(custom: Recipe[], kitchen?: Kitchen): Catalog {
+export function catalogWith(custom: RecipeRecord[], kitchen?: Kitchen): Catalog {
   const cat: Catalog = { ...CATALOG }
+  for (const [id, e] of Object.entries(kitchen?.ingredientEdits ?? {})) {
+    const base = cat[id]
+    if (!base) continue
+    cat[id] = {
+      ...base,
+      ...(e.name && e.name !== base.name ? { name: e.name, aliases: [...(base.aliases ?? []), base.name] } : {}),
+      ...(e.cat ? { cat: e.cat } : {}),
+      ...(e.pack && base.unit ? { step: base.unit === 'pc' ? 1 : e.pack, sku: { name: base.sku?.name ?? base.name, price: base.sku?.price ?? 0, pack: e.pack } } : {}),
+      ...(e.hidden ? { hidden: true } : {})
+    }
+  }
   for (const [id, v] of Object.entries(kitchen?.customIngredients ?? {})) {
     cat[id] ??= { name: v.name, cat: v.cat, unit: v.unit, kind: ['spices', 'sauces'].includes(v.cat) ? 'stp' : 'dur', shelf: 0, ...(v.pack ? { step: v.unit === 'pc' ? 1 : v.pack } : {}), sku: v.pack ? { name: v.name, pack: v.pack, price: 0 } : null }
   }
@@ -103,7 +114,35 @@ export async function deleteJournal(id: number) {
   })
   notifyChange()
 }
-export const allRecipes = (custom: Recipe[]) => [...RECIPES, ...custom.filter(c => !RECIPES.some(r => r.id === c.id))]
+/** Built-in recipes with your edits, hides and own recipes applied. */
+export const allRecipes = (records: RecipeRecord[]) => resolveRecipes(RECIPES, records)
+
+const putRecipe = async (r: RecipeRecord) => { await db.recipes.put({ ...r, updatedAt: Date.now() }); notifyChange() }
+
+/** Save a new or edited recipe (an edited built-in keeps its id and replaces the original). */
+export async function saveRecipe(r: Recipe) {
+  const parsed = RecipeSchema.safeParse(r)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    throw new Error(`${issue.path.join(' › ') || 'recipe'}: ${issue.message}`)
+  }
+  await putRecipe({ ...r, custom: !RECIPES.some(x => x.id === r.id) || undefined, hidden: false, reset: false })
+}
+/** Hide a dish from suggestions (built-in or yours); restorable. */
+export async function hideRecipe(id: string) {
+  const cur = await db.recipes.get(id)
+  await putRecipe({ ...(cur ?? { id }), hidden: true, reset: false })
+}
+/** Bring back a hidden dish; for a built-in this also drops your edits. */
+export async function restoreRecipe(id: string, keepEdits = false) {
+  const cur = await db.recipes.get(id)
+  if (RECIPES.some(x => x.id === id) && !keepEdits) await putRecipe({ id, reset: true })
+  else await putRecipe({ ...(cur ?? { id }), hidden: false, reset: false })
+}
+/** Delete one of your own recipes (synced as a deletion). */
+export async function deleteRecipe(id: string) {
+  await putRecipe({ id, deletedAt: Date.now() })
+}
 
 export interface CookLog { recipe: Recipe; tierIndex: number; rating: number | null; note: string; photo: Blob | null; catalog: Catalog }
 
@@ -138,7 +177,7 @@ export async function importRecipes(json: unknown): Promise<{ added: string[]; e
       return { added, error: `${issue.path.join('.') || 'recipe'}: ${issue.message}` }
     }
     const r = { ...(parsed.data as Recipe), custom: true, updatedAt: Date.now() }
-    if (RECIPES.some(x => x.id === r.id)) r.id = `my_${r.id}`
+    if (RECIPES.some(x => x.id === r.id) || await db.recipes.get(r.id)) r.id = `my_${r.id}_${Date.now().toString(36)}`
     await db.recipes.put(r)
     added.push(r.name)
   }
@@ -146,7 +185,7 @@ export async function importRecipes(json: unknown): Promise<{ added: string[]; e
   return { added }
 }
 
-export interface Backup { app: 'smart-pantry'; version: 1; exportedAt: string; kitchen: Kitchen; journal: JournalEntry[]; recipes: Recipe[] }
+export interface Backup { app: 'smart-pantry'; version: 1; exportedAt: string; kitchen: Kitchen; journal: JournalEntry[]; recipes: RecipeRecord[] }
 
 export async function exportBackup(): Promise<Backup> {
   return {

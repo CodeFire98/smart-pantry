@@ -1,13 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useMemo, useState } from 'react'
-import type { JournalEntry, Kitchen, Recipe } from '../engine'
+import type { JournalEntry, Kitchen, RecipeRecord } from '../engine'
 import { allRecipes, catalogWith, db, ensureKitchen } from './db'
 import { fetchPhoto } from './sync'
 
 const fetching = new Set<string>()
 
 const EMPTY_J: JournalEntry[] = []
-const EMPTY_R: Recipe[] = []
+const EMPTY_R: RecipeRecord[] = []
 
 export function useData() {
   useEffect(() => { ensureKitchen() }, [])
@@ -21,9 +21,9 @@ export function useData() {
     }
   }, [journal])
   const custom = useLiveQuery(() => db.recipes.toArray(), [], EMPTY_R)
-  const catalog = useMemo(() => catalogWith(custom, kitchen), [custom, kitchen?.customIngredients]) // eslint-disable-line react-hooks/exhaustive-deps
-  const recipes = useMemo(() => allRecipes(custom), [custom])
-  return { kitchen, journal, catalog, recipes }
+  const catalog = useMemo(() => catalogWith(custom, kitchen), [custom, kitchen?.customIngredients, kitchen?.ingredientEdits]) // eslint-disable-line react-hooks/exhaustive-deps
+  const resolved = useMemo(() => allRecipes(custom), [custom])
+  return { kitchen, journal, catalog, recipes: resolved.recipes, hiddenRecipes: resolved.hidden, editedRecipes: resolved.edited }
 }
 
 /** Object URL for a stored photo, revoked on unmount. */

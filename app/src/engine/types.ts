@@ -19,7 +19,17 @@ export interface Ingredient {
   aliases?: string[]
   /** How much one +/− tap changes the amount in the Pantry. Defaults to the pack size. */
   step?: number
+  /** Hidden from the Pantry list (still usable by recipes). */
+  hidden?: boolean
   sku: Sku | null
+}
+
+/** Your changes to a built-in ingredient (name, section, pack size, hidden). */
+export interface IngredientEdit {
+  name?: string
+  cat?: string
+  pack?: number
+  hidden?: boolean
 }
 
 export type Catalog = Record<string, Ingredient>
@@ -111,6 +121,7 @@ export interface Kitchen {
   /** Instamart order ids already added to the pantry. */
   importedOrders?: string[]
   customIngredients?: Record<string, CustomIngredient>
+  ingredientEdits?: Record<string, IngredientEdit>
   /** Last edited (ms) per top-level field, for syncing between devices. */
   fieldT?: Record<string, number>
   /** Deleted pantry items: id → when (ms), so a deletion syncs instead of coming back. */

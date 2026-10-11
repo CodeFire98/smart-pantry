@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
-import { taste, type JournalEntry } from '../../engine'
+import { RECIPES, taste, type JournalEntry } from '../../engine'
 import { exportBackup, importBackup, importRecipes } from '../../store/db'
 import { usePhotoUrl } from '../../store/hooks'
 import { useApp } from '../AppContext'
 import { Art, Icon, Section } from '../components'
 import { JournalSheet } from '../JournalSheet'
+import { RecipesScreen } from '../recipes/RecipesScreen'
 import { SwiggyCard } from '../swiggy/SwiggyCard'
 import { syncNow, useSyncState } from '../../store/sync'
 
@@ -30,6 +31,8 @@ export function My() {
   const { journal, recipes, toast } = useApp()
   const fileRecipes = useRef<HTMLInputElement>(null), fileBackup = useRef<HTMLInputElement>(null)
   const [editing, setEditing] = useState<number | null>(null)
+  const [managing, setManaging] = useState(false)
+  const { hiddenRecipes, editedRecipes } = useApp()
   const editingEntry = editing != null ? journal.find(j => j.id === editing) : undefined
   const t = taste(journal, recipes)
   const rated = journal.filter(j => j.rating)
@@ -37,7 +40,7 @@ export function My() {
   const counts: Record<string, number> = {}
   journal.forEach(j => { counts[j.recipeName] = (counts[j.recipeName] ?? 0) + 1 })
   const fav = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
-  const custom = recipes.filter(r => r.custom)
+  const custom = recipes.filter(r => !RECIPES.some(b => b.id === r.id))
 
   const readJson = async (f: File) => JSON.parse(await f.text())
   const onRecipes = async (f?: File) => {
@@ -79,12 +82,14 @@ export function My() {
         ? <div className="journal">{journal.slice(0, 60).map(j => <Entry key={j.id} j={j} onOpen={() => setEditing(j.id!)} />)}</div>
         : <div className="empty">Nothing logged yet. Cook something, then tap <b>I cooked this</b> on the dish. Add a photo, a rating and a note: your photos become the dish covers, and ratings tune what gets suggested.</div>}
     </Section>
-    <Section title="Your recipes" sub={`${custom.length} added`}>
+    <Section title="Recipes" sub={`${recipes.length} dishes${custom.length ? ` · ${custom.length} yours` : ''}${editedRecipes.size ? ` · ${editedRecipes.size} edited` : ''}${hiddenRecipes.length ? ` · ${hiddenRecipes.length} hidden` : ''}`}>
       <div className="card">
-        <div className="sub">Import recipes as JSON in the same 3-version format, for example drafts from the prototype's “Suggest new dishes” button. Built-in AI drafting arrives in Phase 3.</div>
-        {custom.length > 0 && <div className="sub"><b>Added:</b> {custom.map(r => r.name).join(', ')}</div>}
-        <input ref={fileRecipes} className="visually-hidden" type="file" accept="application/json,.json" onChange={e => { onRecipes(e.target.files?.[0]); e.target.value = '' }} />
-        <button className="btn sm ghost" onClick={() => fileRecipes.current?.click()}>Import recipe JSON</button>
+        <div className="sub">Add your own dishes, or change and remove any recipe, including the built-in ones.</div>
+        <div className="row">
+          <button className="btn sm accent" onClick={() => setManaging(true)}>Manage recipes</button>
+          <input ref={fileRecipes} className="visually-hidden" type="file" accept="application/json,.json" onChange={e => { onRecipes(e.target.files?.[0]); e.target.value = '' }} />
+          <button className="btn sm ghost" onClick={() => fileRecipes.current?.click()}>Import JSON</button>
+        </div>
       </div>
     </Section>
     <Section title="Backup" sub="a file copy, separate from sync">
@@ -95,6 +100,7 @@ export function My() {
       </div>
     </Section>
     {editingEntry && <JournalSheet entry={editingEntry} onClose={() => setEditing(null)} />}
+    {managing && <RecipesScreen onClose={() => setManaging(false)} />}
   </>
 }
 

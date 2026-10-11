@@ -95,3 +95,20 @@ describe('stampPreSync (first sync on a device)', () => {
     expect(mergeKitchen(s, stamped).items.paneer.q).toBe(0)
   })
 })
+
+describe('ingredient edits sync as a field', () => {
+  it('newest ingredientEdits wins', () => {
+    const base = seed()
+    const a = edit(base, 100, k => { k.ingredientEdits = { paneer: { name: 'Malai paneer' } } })
+    const b = edit(base, 200, k => { k.ingredientEdits = { paneer: { pack: 250 } } })
+    expect(mergeKitchen(a, b).ingredientEdits).toEqual({ paneer: { pack: 250 } })
+  })
+})
+
+describe('merging two untouched kitchens', () => {
+  it('stays pristine (no zero timestamps recorded)', () => {
+    const m = mergeKitchen(seed(), seed())
+    expect(m.fieldT).toEqual({})
+    expect(isPristine(m)).toBe(true)
+  })
+})

@@ -4,11 +4,13 @@ import { logCook } from '../../store/db'
 import { shrinkPhoto } from '../../store/hooks'
 import { useApp } from '../AppContext'
 import { Art, Dots, Icon } from '../components'
+import { RecipeEditor } from '../recipes/RecipeEditor'
 
 export function DishDetail({ recipe: r }: { recipe: Recipe }) {
   const { kitchen, catalog, ctx, energy, journal, openDish, addToList, name } = useApp()
   const [logTier, setLogTier] = useState<number | null>(null)
   const [showWhy, setShowWhy] = useState(false)
+  const [editingRecipe, setEditingRecipe] = useState(false)
   const ev = evaluate(r, ctx)
   const cooked = journal.filter(j => j.recipeId === r.id)
   const fmt = (id: string, q: number) => (catalog[id]?.unit === 'pc' ? `${q}` : `${q} ${catalog[id]?.unit}`)
@@ -18,6 +20,7 @@ export function DishDetail({ recipe: r }: { recipe: Recipe }) {
       <button className="back" onClick={() => openDish(null)} aria-label="Back">‹</button>
       <span className="sub" style={{ flex: 1 }}>{r.meals.join(' · ')}</span>
       <button className="linkbtn" onClick={() => setShowWhy(s => !s)}>score {ev.score}</button>
+      <button className="btn sm ghost" onClick={() => setEditingRecipe(true)}>Edit recipe</button>
     </div>
     <div className="scroll" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div className="detail-hero"><Art recipe={r} />
@@ -61,6 +64,7 @@ export function DishDetail({ recipe: r }: { recipe: Recipe }) {
       })}
     </div>
     {logTier != null && <LogSheet recipe={r} tierIndex={logTier} onClose={() => setLogTier(null)} />}
+    {editingRecipe && <RecipeEditor recipeId={r.id} onClose={() => setEditingRecipe(false)} />}
   </div>
 }
 

@@ -1,11 +1,17 @@
 import { HttpError } from './http.js'
 import { redis } from './redis.js'
 
+/**
+ * Production and development keep separate synced data, so testing locally (vercel dev / previews)
+ * can never change the live kitchen. The Swiggy login keys are shared on purpose.
+ */
+export const syncPrefix = (env = process.env.VERCEL_ENV) => (env === 'production' ? 'sp:sync:' : 'sp-dev:sync:')
+const P = syncPrefix()
 export const SYNC = {
-  kitchen: 'sp:sync:kitchen',
-  journal: 'sp:sync:journal',
-  recipes: 'sp:sync:recipes',
-  photo: (key: string) => `sp:sync:photo:${key}`
+  kitchen: `${P}kitchen`,
+  journal: `${P}journal`,
+  recipes: `${P}recipes`,
+  photo: (key: string) => `${P}photo:${key}`
 }
 
 export const MAX_DOC = 900_000          // bytes of JSON per kitchen doc

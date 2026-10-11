@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { isoDate, isPristine, kitchenFromSeed, mergeJournal, mergeKitchen, mergeRecipes, stampPreSync, type JournalEntry, type Kitchen, type Recipe } from '../engine'
+import { isoDate, isPristine, kitchenFromSeed, mergeJournal, mergeKitchen, mergeRecipes, stampPreSync, type JournalEntry, type Kitchen, type RecipeRecord } from '../engine'
 import { onChange } from './changes'
 import { db, putSyncedKitchen, readKitchen } from './db'
 
@@ -51,7 +51,7 @@ async function syncOnce(attempt = 0): Promise<void> {
   if (!navigator.onLine) return set({ status: 'offline' })
   set({ status: 'syncing' })
   try {
-    const remote = await call<{ kitchen: { doc: Kitchen; rev: number } | null; journal: JournalEntry[]; recipes: Recipe[] }>('/api/sync')
+    const remote = await call<{ kitchen: { doc: Kitchen; rev: number } | null; journal: JournalEntry[]; recipes: RecipeRecord[] }>('/api/sync')
     // Kitchen: a device that still has only the starting pantry adopts the server copy; otherwise merge.
     let local = await readKitchen()
     if (!(await kv<boolean>('sync:started'))) {
@@ -136,6 +136,4 @@ export function startSync() {
   window.addEventListener('online', () => syncNow())
   window.addEventListener('offline', () => set({ status: 'offline' }))
   onChange(() => { window.clearTimeout(timer); timer = window.setTimeout(() => syncNow(), 2000) })
-  // While the app is open in front, pick up changes from the other device every minute.
-  window.setInterval(() => { if (document.visibilityState === 'visible') syncNow() }, 60_000)
 }

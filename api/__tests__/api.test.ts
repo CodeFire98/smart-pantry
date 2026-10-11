@@ -4,6 +4,7 @@ import { guardMismatch, mergeCart, money, trimCart, type RawCart } from '../_lib
 import { decrypt, encrypt } from '../_lib/crypto'
 import { signSession, verifySession } from '../_lib/session'
 import { SwiggyError, unwrap } from '../_lib/swiggy'
+import { syncPrefix } from '../_lib/sync'
 
 const key = randomBytes(32)
 
@@ -75,5 +76,14 @@ describe('envelope', () => {
     expect(() => unwrap(fail('Invalid addressId'), 't')).toThrow(SwiggyError)
     try { unwrap(fail('Item out of stock'), 't') } catch (e) { expect((e as SwiggyError).kind).toBe('domain'); expect((e as SwiggyError).status).toBe(409) }
     try { unwrap(fail('Missing query'), 't') } catch (e) { expect((e as SwiggyError).kind).toBe('input') }
+  })
+})
+
+describe('sync key isolation', () => {
+  it('keeps development data away from production', () => {
+    expect(syncPrefix('production')).toBe('sp:sync:')
+    expect(syncPrefix('development')).toBe('sp-dev:sync:')
+    expect(syncPrefix('preview')).toBe('sp-dev:sync:')
+    expect(syncPrefix(undefined)).toBe('sp-dev:sync:')
   })
 })

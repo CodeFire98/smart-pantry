@@ -1,7 +1,7 @@
-import type { JournalEntry, Kitchen, PantryItem, Recipe } from './types'
+import type { JournalEntry, Kitchen, PantryItem } from './types'
 
 /** Kitchen fields synced as a whole (newest edit wins). `items` is merged per item instead. */
-export const KITCHEN_FIELDS = ['equipment', 'list', 'skuMap', 'pendingOrders', 'customIngredients'] as const
+export const KITCHEN_FIELDS = ['equipment', 'list', 'skuMap', 'pendingOrders', 'customIngredients', 'ingredientEdits'] as const
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 /** Stamp what changed between two versions of the kitchen, so another device can tell which edit is newer. */
@@ -37,7 +37,7 @@ export function mergeKitchen(a: Kitchen, b: Kitchen): Kitchen {
   for (const f of KITCHEN_FIELDS) {
     const ta = a.fieldT?.[f] ?? 0, tb = b.fieldT?.[f] ?? 0
     ;(out as unknown as Record<string, unknown>)[f] = ta > tb ? a[f] : b[f]
-    out.fieldT![f] = Math.max(ta, tb)
+    if (ta || tb) out.fieldT![f] = Math.max(ta, tb); else delete out.fieldT![f]
   }
   out.importedOrders = [...new Set([...(a.importedOrders ?? []), ...(b.importedOrders ?? [])])]
   const done = new Set(out.importedOrders)
@@ -62,12 +62,12 @@ export function mergeRecords<T>(local: T[], remote: T[], key: (r: T) => string, 
 export const mergeJournal = (local: JournalEntry[], remote: JournalEntry[]) =>
   mergeRecords(local.filter(j => j.uid), remote, j => j.uid!, j => j.updatedAt ?? j.at)
 
-export const mergeRecipes = (local: Recipe[], remote: Recipe[]) =>
+export const mergeRecipes = <R extends { id: string; updatedAt?: number }>(local: R[], remote: R[]) =>
   mergeRecords(local, remote, r => r.id, r => r.updatedAt ?? 0)
 
 /** True when this device still has only the untouched starting pantry (nothing worth uploading). */
 export const isPristine = (k: Kitchen) =>
-  Object.values(k.items).every(i => i.t == null) && !Object.keys(k.fieldT ?? {}).length
+  Object.values(k.items).every(i => !i.t) && !Object.values(k.fieldT ?? {}).some(Boolean)
 
 /**
  * Before a device's first sync: stamp whatever differs from the starting pantry as edited `now`,
