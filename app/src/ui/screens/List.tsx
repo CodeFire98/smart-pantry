@@ -40,7 +40,7 @@ function ShoppingList() {
         const ing = catalog[i], s = ing.sku
         return <div className="citem" key={i}>
           <span className="pname">{ing.name}
-            <small>{s ? `${s.name} · ${s.pack} ${ing.unit ?? (s.pack >= 100 ? 'g' : 'pc')} · ₹${s.price}` : 'pick on Instamart'} · <a className="linkbtn" href={instamartSearch(s?.name ?? ing.name)} target="_blank" rel="noreferrer">Search on Instamart</a></small></span>
+            <small>{s ? `${s.name} · ${s.pack} ${ing.unit ?? (s.pack >= 100 ? 'g' : 'pc')}${s.price ? ` · ₹${s.price}` : ''}` : 'pick on Instamart'} · <a className="linkbtn" href={instamartSearch(s?.name ?? ing.name)} target="_blank" rel="noreferrer">Search on Instamart</a></small></span>
           <span className="row" style={{ flex: 'none' }}>
             <button className="btn sm ghost" onClick={() => bought([i])} aria-label={`Mark ${ing.name} bought`}>{Icon.check}Got it</button>
             <button className="x" onClick={() => updateKitchen(k => ({ ...k, list: k.list.filter(x => x !== i) }))} aria-label={`Remove ${ing.name}`}>×</button>

@@ -17,6 +17,8 @@ export interface Ingredient {
   shelf: number
   /** Other names shops use (Hindi names, product types), for matching Instamart order lines. */
   aliases?: string[]
+  /** How much one +/− tap changes the amount in the Pantry. Defaults to the pack size. */
+  step?: number
   sku: Sku | null
 }
 
@@ -87,6 +89,15 @@ export interface PendingOrder {
   lines: { id: string; packs: number; quantityDescription: string }[]
 }
 
+/** A pantry item you added yourself (not in data/ingredients.json). */
+export interface CustomIngredient {
+  name: string
+  cat: string
+  unit: Unit
+  /** Pack size in `unit`, used for +/− steps and restocks. */
+  pack?: number
+}
+
 export interface Kitchen {
   items: Record<string, PantryItem>
   equipment: string[]
@@ -96,10 +107,14 @@ export interface Kitchen {
   pendingOrders?: PendingOrder[]
   /** Instamart order ids already added to the pantry. */
   importedOrders?: string[]
+  customIngredients?: Record<string, CustomIngredient>
 }
 
 export interface JournalEntry {
   id?: number
+  /** Stable id across devices. */
+  uid?: string
+  updatedAt?: number
   recipeId: string
   recipeName: string
   tier: string

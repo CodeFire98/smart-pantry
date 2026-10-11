@@ -11,6 +11,7 @@ export const IngredientSchema = z.object({
   kind: z.enum(['per', 'dur', 'stp']),
   shelf: z.number().min(0),
   aliases: z.array(z.string()).optional(),
+  step: z.number().positive().optional(),
   sku: z.object({ name: z.string(), pack: z.number().positive(), price: z.number().min(0) }).nullable()
 })
 export const CatalogSchema = z.record(IngredientSchema)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CATALOG, kitchenFromSeed, matchOrderItem, packAmount, parseQuantity, restockAmounts } from '..'
+import { CATALOG, kitchenFromSeed, matchOrderItem, packAmount, parseQuantity, restockAmounts, stepFor } from '..'
 
 describe('parseQuantity', () => {
   it.each([
@@ -66,5 +66,23 @@ describe('matchOrderItem by item id', () => {
   it('uses the Instamart item id of a product you picked', () => {
     const k = { skuMap: { paneer: { spinId: 'SP1', skuId: 'SK1', name: 'Milky Mist Paneer', quantityDescription: '200 g', price: 109, imageUrl: null, qty: 1 } } }
     expect(matchOrderItem('Some Renamed Product', k, CATALOG, 'SK1')).toEqual({ id: 'paneer', via: 'picked' })
+  })
+})
+
+describe('stepFor', () => {
+  it('moves in the units Lakshith buys', () => {
+    expect(stepFor('paneer', CATALOG)).toBe(200)
+    expect(stepFor('curd', CATALOG)).toBe(500)
+    expect(stepFor('milk', CATALOG)).toBe(1000)
+    expect(stepFor('eggs', CATALOG)).toBe(1)
+    expect(stepFor('cheese', CATALOG)).toBe(1)
+    expect(stepFor('butter', CATALOG)).toBe(50)
+    expect(stepFor('rice', CATALOG)).toBe(500)
+  })
+  it('defaults to a pack for g/ml items without a step, and 1 for level items', () => {
+    expect(stepFor('momos', CATALOG)).toBe(1)
+    expect(stepFor('salt', CATALOG)).toBe(1)
+    const cat = { ...CATALOG, coconut_milk: { name: 'Coconut milk', cat: 'shelf', unit: 'ml' as const, kind: 'dur' as const, shelf: 0, sku: { name: 'x', pack: 400, price: 0 } } }
+    expect(stepFor('coconut_milk', cat)).toBe(400)
   })
 })

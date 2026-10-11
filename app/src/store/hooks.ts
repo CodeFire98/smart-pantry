@@ -11,7 +11,7 @@ export function useData() {
   const kitchen = useLiveQuery(async () => (await db.kv.get('kitchen'))?.value as Kitchen | undefined, [])
   const journal = useLiveQuery(() => db.journal.orderBy('at').reverse().toArray(), [], EMPTY_J)
   const custom = useLiveQuery(() => db.recipes.toArray(), [], EMPTY_R)
-  const catalog = useMemo(() => catalogWith(custom), [custom])
+  const catalog = useMemo(() => catalogWith(custom, kitchen), [custom, kitchen?.customIngredients]) // eslint-disable-line react-hooks/exhaustive-deps
   const recipes = useMemo(() => allRecipes(custom), [custom])
   return { kitchen, journal, catalog, recipes }
 }

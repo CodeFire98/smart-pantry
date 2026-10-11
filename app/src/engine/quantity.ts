@@ -82,3 +82,12 @@ export function restockAmounts(lines: RestockLine[], kitchen: Kitchen, catalog: 
 }
 
 export const unitLabel = (u: Unit, n: number) => (u === 'pc' ? `${n}` : u ? `${n} ${u}` : '')
+
+/** How much one +/− tap changes an item: the ingredient's own step, else one pack (pieces move by 1). */
+export function stepFor(id: string, catalog: Catalog): number {
+  const ing = catalog[id]
+  if (!ing?.unit) return 1
+  if (ing.step) return ing.step
+  if (ing.unit === 'pc') return 1
+  return ing.sku?.pack ?? 100
+}

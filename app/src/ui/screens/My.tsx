@@ -1,22 +1,26 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { taste, type JournalEntry } from '../../engine'
 import { exportBackup, importBackup, importRecipes } from '../../store/db'
 import { usePhotoUrl } from '../../store/hooks'
 import { useApp } from '../AppContext'
-import { Art, Section } from '../components'
+import { Art, Icon, Section } from '../components'
+import { JournalSheet } from '../JournalSheet'
 import { SwiggyCard } from '../swiggy/SwiggyCard'
 
-function Entry({ j }: { j: JournalEntry }) {
-  const { recipes, openDish } = useApp()
+function Entry({ j, onOpen }: { j: JournalEntry; onOpen: () => void }) {
+  const { recipes } = useApp()
   const url = usePhotoUrl(j.photoId)
   const r = recipes.find(x => x.id === j.recipeId)
-  return <button className="entry" style={{ padding: 0, textAlign: 'left' }} onClick={() => r && openDish(r.id)}>
-    <div className="ph">{url ? <img src={url} alt={j.recipeName} /> : r ? <Art recipe={r} photo={false} /> : null}</div>
+  return <button className="entry" style={{ padding: 0, textAlign: 'left' }} onClick={onOpen} aria-label={`Edit ${j.recipeName}, ${j.tier}`}>
+    <div className="ph">
+      {url ? <img src={url} alt={j.recipeName} /> : r ? <Art recipe={r} photo={false} /> : null}
+      {!url && <span className="ph-add">{Icon.cam}Add photo</span>}
+    </div>
     <div className="entry-body">
       <b>{j.recipeName}</b>
-      <span className="sub" style={{ fontSize: 11.5 }}>{j.tier} · {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+      <span className="row" style={{ gap: 6 }}><span className="tierpill">{j.tier}</span><span className="sub" style={{ fontSize: 11.5 }}>{new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span></span>
       {j.rating ? <span className="rating">{'★'.repeat(j.rating)}{'☆'.repeat(5 - j.rating)}</span> : null}
-      {j.note && <span className="note">{j.note}</span>}
+      {j.note && <i className="note">{j.note}</i>}
     </div>
   </button>
 }
@@ -24,6 +28,8 @@ function Entry({ j }: { j: JournalEntry }) {
 export function My() {
   const { journal, recipes, toast } = useApp()
   const fileRecipes = useRef<HTMLInputElement>(null), fileBackup = useRef<HTMLInputElement>(null)
+  const [editing, setEditing] = useState<number | null>(null)
+  const editingEntry = editing != null ? journal.find(j => j.id === editing) : undefined
   const t = taste(journal, recipes)
   const rated = journal.filter(j => j.rating)
   const avg = rated.length ? rated.reduce((a, j) => a + j.rating!, 0) / rated.length : null
@@ -68,7 +74,7 @@ export function My() {
     <Section title="Instamart"><SwiggyCard /></Section>
     <Section title="Cooked" sub="saved on this phone">
       {journal.length
-        ? <div className="journal">{journal.slice(0, 60).map(j => <Entry key={j.id} j={j} />)}</div>
+        ? <div className="journal">{journal.slice(0, 60).map(j => <Entry key={j.id} j={j} onOpen={() => setEditing(j.id!)} />)}</div>
         : <div className="empty">Nothing logged yet. Cook something, then tap <b>I cooked this</b> on the dish. Add a photo, a rating and a note: your photos become the dish covers, and ratings tune what gets suggested.</div>}
     </Section>
     <Section title="Your recipes" sub={`${custom.length} added`}>
@@ -86,5 +92,6 @@ export function My() {
         <button className="btn sm ghost" onClick={() => fileBackup.current?.click()}>Restore from file</button>
       </div>
     </Section>
+    {editingEntry && <JournalSheet entry={editingEntry} onClose={() => setEditing(null)} />}
   </>
 }
