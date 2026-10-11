@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { applyAiFilters, interpret, normalizeDraft, rank, type AiFilters, type Draft } from '../../engine'
 import { ai } from '../../ai/api'
+import { logActivity } from '../../store/activity'
 import { useAiContext } from '../../ai/useAi'
 import { RecipeEditor } from '../recipes/RecipeEditor'
 import { useApp } from '../AppContext'
@@ -9,7 +10,8 @@ import { Art, ReadyLine } from '../components'
 const EXAMPLES = ['spicy and quick', 'paneer', 'eggs', 'comfort', 'dal', 'rajma chawal']
 
 export function Ask() {
-  const { recipes, hiddenRecipes, catalog, ctx, query, setQuery, openDish } = useApp()
+  const { recipes, hiddenRecipes, catalog, ctx, query, setQuery: setQ, openDish } = useApp()
+  const setQuery = (q: string) => { setQ(q); if (q.trim()) logActivity({ type: 'search', text: q.toLowerCase() }) }
   const [draft, setDraft] = useState(query)
   const { context, explain } = useAiContext()
   const [aiUnderstood, setAiUnderstood] = useState<{ q: string; f: AiFilters } | null>(null)

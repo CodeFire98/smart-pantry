@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { isoDate, type Catalog, type Context, type Energy, type JournalEntry, type Kitchen, type Meal, type Recipe } from '../engine'
+import { logActivity } from '../store/activity'
 import { updateKitchen } from '../store/db'
 import { useData } from '../store/hooks'
 
@@ -46,7 +47,11 @@ export function AppProvider({ children }: { children: (ready: boolean, toastMsg:
   const [energy, setEnergy] = useState<Energy>(2)
   const [moods, setMoods] = useState<string[]>([])
   const [query, setQuery] = useState('')
-  const [detail, openDish] = useState<string | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
+  const openDish = useCallback((id: string | null) => {
+    setDetail(id)
+    if (id) { const r = recipes.find(x => x.id === id); logActivity({ type: 'open', id, names: r ? [r.name] : undefined }) }
+  }, [recipes])
   const [toastMsg, setToast] = useState<string | null>(null)
   const timer = useRef<number>()
 
@@ -60,7 +65,8 @@ export function AppProvider({ children }: { children: (ready: boolean, toastMsg:
     const fresh = ids.filter(i => !kitchen?.list.includes(i))
     updateKitchen(k => ({ ...k, list: [...k.list, ...fresh.filter(i => !k.list.includes(i))] }))
     toast(fresh.length ? `Added ${fresh.map(name).join(', ')} to your list` : 'Already on your list')
-  }, [kitchen, name, toast])
+    if (fresh.length) logActivity({ type: 'list', names: fresh.map(id => catalog[id]?.name ?? id) })
+  }, [kitchen, name, toast, catalog])
 
   const value = useMemo<AppState | null>(() => {
     if (!kitchen) return null
@@ -70,7 +76,7 @@ export function AppProvider({ children }: { children: (ready: boolean, toastMsg:
       toggleMood: m => setMoods(ms => (ms.includes(m) ? ms.filter(x => x !== m) : [...ms, m])),
       query, setQuery, detail, openDish, ctx, toast, addToList, name
     }
-  }, [kitchen, journal, catalog, recipes, hiddenRecipes, editedRecipes, tab, meal, energy, moods, query, detail, toast, addToList, name])
+  }, [kitchen, journal, catalog, recipes, hiddenRecipes, editedRecipes, tab, meal, energy, moods, query, detail, openDish, toast, addToList, name])
 
   return <Ctx.Provider value={value}>{children(!!value, toastMsg)}</Ctx.Provider>
 }

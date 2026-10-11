@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { RECIPES, newRecipeId, rowToSlot, slotToRow, type CustomIngredient, type IngRow, type Meal, type Recipe } from '../../engine'
+import { logActivity } from '../../store/activity'
 import { deleteRecipe, hideRecipe, restoreRecipe, saveRecipe, updateKitchen } from '../../store/db'
 import { useApp } from '../AppContext'
 import { Icon } from '../components'
@@ -64,6 +65,7 @@ export function RecipeEditor({ recipeId, onClose, draft, newIngredients = {}, wh
         items: { ...k.items, ...Object.fromEntries(toAdd.map(([id, v]) => [id, v.unit ? { q: 0 } : { l: 0 }])) }
       }))
       await saveRecipe(recipe)
+      if (!original) logActivity({ type: 'recipe', id: recipe.id, names: [recipe.name], text: draft ? 'ai' : 'you' })
       toast(`${d.name.trim()} saved`)
       onClose()
     } catch (e) { setErr(e instanceof Error ? e.message : 'Couldn’t save this recipe.') }

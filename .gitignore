@@ -8,3 +8,4 @@ dev-dist/
 *.tsbuildinfo
 .vercel
 demo/
+exports/

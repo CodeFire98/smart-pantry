@@ -21,7 +21,11 @@ export function interpret(query: string, recipes: Recipe[], catalog: Catalog): I
   const text = query.toLowerCase().trim()
   if (!text) return null
   const words = text.split(/[^a-z-]+/).filter(Boolean)
-  const dishes = recipes.filter(r => [r.name.toLowerCase(), ...(r.aliases ?? [])].some(a => new RegExp(`\\b${escapeRe(a.toLowerCase())}\\b`).test(text)))
+  // A dish matches when its whole name is in the query, or (2+ word queries) every word of the query is in its name:
+  // "avocado toast" finds "Spiced Avocado Toast".
+  const named = words.filter(w => w.length > 2 && !TAG_WORDS[w])
+  const inName = (n: string) => { const nw = n.toLowerCase().split(/[^a-z-]+/); return named.length >= 2 && named.length === words.length && named.every(w => nw.includes(w) || nw.includes(`${w}s`)) }
+  const dishes = recipes.filter(r => [r.name.toLowerCase(), ...(r.aliases ?? [])].some(a => new RegExp(`\\b${escapeRe(a.toLowerCase())}\\b`).test(text)) || inName(r.name))
   const tags = [...new Set(words.map(w => TAG_WORDS[w]).filter(Boolean))]
   const ingredients = Object.keys(catalog).filter(id => {
     const n = catalog[id].name.toLowerCase()

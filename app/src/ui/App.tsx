@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useProfileAuto } from '../ai/profile'
 import { SwiggyProvider, useSwiggy } from '../swiggy/useSwiggy'
 import { AppProvider, useApp, type Tab } from './AppContext'
 import { Ask } from './screens/Ask'
@@ -7,6 +8,10 @@ import { List } from './screens/List'
 import { My } from './screens/My'
 import { Pantry } from './screens/Pantry'
 import { Today } from './screens/Today'
+
+/** The live app. Anywhere else (localhost, previews) keeps separate test data, so say so. */
+const LIVE_HOST = 'lakshith-pantry.vercel.app'
+const isTestCopy = location.hostname !== LIVE_HOST
 
 const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
   { id: 'today', label: 'Today', icon: <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg> },
@@ -20,6 +25,7 @@ function Shell({ toastMsg }: { toastMsg: string | null }) {
   const { tab, setTab, detail, recipes, kitchen, openDish, toast } = useApp()
   const { refresh } = useSwiggy()
   const scroller = useRef<HTMLDivElement>(null)
+  useProfileAuto(kitchen)
   // Coming back from Swiggy's login page: /#swiggy=connected | error&msg=… | login
   useEffect(() => {
     const h = new URLSearchParams(location.hash.slice(1))
@@ -34,6 +40,7 @@ function Shell({ toastMsg }: { toastMsg: string | null }) {
   const dish = detail ? recipes.find(r => r.id === detail) : null
   const Screen = { today: Today, ask: Ask, pantry: Pantry, list: List, my: My }[tab]
   return <div className="phone">
+    {isTestCopy && <div className="dev-banner" role="note">Test copy ({location.host}). Changes here don’t reach your live app at {LIVE_HOST}.</div>}
     <div className="scroll" ref={scroller}><Screen /></div>
     <nav className="tabbar" aria-label="Sections">
       {TABS.map(t => <button key={t.id} className="tab" aria-current={tab === t.id} onClick={() => { setTab(t.id); openDish(null) }}>

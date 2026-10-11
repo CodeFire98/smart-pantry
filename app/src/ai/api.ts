@@ -12,7 +12,8 @@ export function kitchenContext(kitchen: Kitchen, catalog: Catalog, journal: Jour
     expiring: inStock.filter(id => { const e = kitchen.items[id].exp; return e && daysBetween(today, e) <= 2 }).map(id => catalog[id].name),
     equipment: kitchen.equipment,
     journal: journal.slice(0, 25).map(j => ({ dish: j.recipeName, version: j.tier, rating: j.rating, note: j.note })),
-    dishes: recipes.map(r => r.name)
+    dishes: recipes.map(r => r.name),
+    profile: kitchen.profile?.text
   }
 }
 type Ctx = ReturnType<typeof kitchenContext>
@@ -32,6 +33,7 @@ export const ai = {
   draft: (context: Ctx, request: string) => post<{ recipe: RawDraft }>('draft', { context, request }),
   parse: (context: Ctx, text: string, tags: string[]) => post<{ filters: AiFilters }>('parse', { context: { catalog: context.catalog, dishes: context.dishes }, text, tags }),
   scan: (context: Ctx, kind: 'bill' | 'shelf', image: string) => post<{ items: ScanItem[] }>('scan', { context: { catalog: context.catalog }, kind, image }),
+  profile: (activity: string, current: { text: string; by: string } | null) => post<{ markdown: string }>('profile', { activity, current }),
   usage: async () => {
     const r = await fetch('/api/ai/usage', { credentials: 'same-origin' })
     return r.ok ? (await r.json()) as { used: number; cap: number; model: string } : null

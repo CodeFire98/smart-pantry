@@ -14,6 +14,8 @@ export interface Draft { recipe: Recipe; why: string; newIngredients: Record<str
 
 const MEALS: Meal[] = ['breakfast', 'lunch', 'snack', 'dinner']
 const CATS = ['fridge', 'fresh', 'freezer', 'shelf', 'spices', 'sauces']
+/** Trim to a whole word so a version name never ends mid-word. */
+const shortName = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max + 1).replace(/\s+\S*$/, '').replace(/[\s,&-]+$/, '') || s.slice(0, max))
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40)
 const clamp = (n: unknown, lo: number, hi: number, d: number) => (typeof n === 'number' && isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : d)
 
@@ -57,7 +59,7 @@ export function normalizeDraft(raw: RawDraft, catalog: Catalog, takenIds: Set<st
       rows.push({ id, q: amount, opt: !!ing.optional, ...(sub && sub !== id ? { subId: sub, subQ: unitOf(sub) ? amount : null } : {}) })
     }
     return {
-      name: (typeof t?.name === 'string' && t.name.trim() ? t.name.trim() : ['Basic', 'Classic', 'Loaded', 'Special'][i]).slice(0, 30),
+      name: shortName(typeof t?.name === 'string' && t.name.trim() ? t.name.trim() : ['Basic', 'Classic', 'Loaded', 'Special'][i], 32),
       mins: clamp(t?.mins, 1, 240, 20), effort: clamp(t?.effort, 1, 3, 1),
       add: rows.map(rowToSlot),
       steps: (t?.steps ?? []).filter((s): s is string => typeof s === 'string' && !!s.trim()).map(s => s.trim().slice(0, 240)).slice(0, 6)

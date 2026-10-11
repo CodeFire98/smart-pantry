@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { logActivity } from '../../store/activity'
 import { updateKitchen } from '../../store/db'
 import { api, ApiError, type Cart, type PaymentOptions, type PlacedOrder } from '../../swiggy/api'
 import { useSwiggy } from '../../swiggy/useSwiggy'
@@ -46,6 +47,7 @@ export function OrderSheet({ onClose }: { onClose: (placed?: boolean) => void })
     const bySpin = new Map(Object.entries(kitchen.skuMap ?? {}).map(([id, s]) => [s.spinId, { id, s }]))
     const lines = cart.items.flatMap(i => { const m = bySpin.get(i.spinId); return m ? [{ id: m.id, packs: i.quantity, quantityDescription: m.s.quantityDescription }] : [] })
     const ordered = new Set(lines.map(l => l.id))
+    logActivity({ type: 'order', names: cart.items.map(i => i.name), n: cart.total })
     updateKitchen(k => ({ ...k, list: k.list.filter(id => !ordered.has(id)), pendingOrders: [...(k.pendingOrders ?? []), { orderId: o.orderId, at: Date.now(), total: cart.total, lines }] }))
   }
 

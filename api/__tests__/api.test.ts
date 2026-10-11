@@ -96,3 +96,19 @@ describe('AI guardrails', () => {
     for (const no of ['gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-pro-latest', 'nano-banana-pro-preview', 'gemini-omni-flash-preview']) expect(re.test(no)).toBe(false)
   })
 })
+
+describe('activity events', () => {
+  it('keeps only well-formed events and clips their strings', async () => {
+    const { cleanActivity } = await import('../_lib/sync.js')
+    const out = cleanActivity([
+      { uid: '11111111-2222', t: 1, type: 'search', text: 'x'.repeat(500), extra: 'dropped' },
+      { uid: 'bad uid!', t: 1, type: 'search' },
+      { uid: '33333333-4444', t: 2, type: 'hack' },
+      { uid: '55555555-6666', t: 3, type: 'order', names: ['Milk', 7, 'Curd'], n: 168 }
+    ])
+    expect(out).toEqual([
+      { uid: '11111111-2222', t: 1, type: 'search', text: 'x'.repeat(120) },
+      { uid: '55555555-6666', t: 3, type: 'order', names: ['Milk', 'Curd'], n: 168 }
+    ])
+  })
+})

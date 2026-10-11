@@ -126,6 +126,37 @@ export interface Kitchen {
   fieldT?: Record<string, number>
   /** Deleted pantry items: id → when (ms), so a deletion syncs instead of coming back. */
   tombstones?: Record<string, number>
+  /** "About my cooking": a short markdown note the AI reads with every request. */
+  profile?: TasteProfile
+}
+
+export interface TasteProfile {
+  text: string
+  /** When it was last written (ms), and by whom: AI from activity, or the cook editing it. */
+  at: number
+  by: 'ai' | 'you'
+  /** How many activity events the AI had seen when it last rewrote this. */
+  events: number
+}
+
+export type ActivityType = 'search' | 'open' | 'cook' | 'list' | 'order' | 'restock' | 'scan' | 'recipe'
+
+/** One thing done in the app. Append-only; synced between devices by uid. */
+export interface ActivityEvent {
+  uid: string
+  /** When it happened (ms). */
+  t: number
+  type: ActivityType
+  /** search text, cooked version name, scan kind ('bill' | 'shelf'), or recipe source ('ai' | 'you') */
+  text?: string
+  /** recipe id (open, cook, recipe) */
+  id?: string
+  /** dish name, or item names for list / order / restock / scan */
+  names?: string[]
+  /** rating for a cook, or order total in ₹ */
+  n?: number | null
+  /** Server receive time (ms), set when synced. */
+  r?: number
 }
 
 export interface JournalEntry {

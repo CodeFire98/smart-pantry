@@ -6,6 +6,7 @@ import { usePhotoUrl } from '../../store/hooks'
 import { useApp } from '../AppContext'
 import { Art, Icon, Section } from '../components'
 import { JournalSheet } from '../JournalSheet'
+import { ProfileCard } from '../ProfileCard'
 import { RecipesScreen } from '../recipes/RecipesScreen'
 import { SwiggyCard } from '../swiggy/SwiggyCard'
 import { syncNow, useSyncState } from '../../store/sync'
@@ -78,6 +79,7 @@ export function My() {
     </Section>}
     <SyncRow />
     <AiLine />
+    <Section title="About my cooking" sub="your taste profile, for the AI"><ProfileCard /></Section>
     <Section title="Instamart"><SwiggyCard /></Section>
     <Section title="Cooked">
       {journal.length

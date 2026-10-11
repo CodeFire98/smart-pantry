@@ -13,7 +13,8 @@ function context(b: Record<string, unknown>): KitchenContext {
     expiring: arr<string>(c.expiring).filter(x => typeof x === 'string'),
     equipment: arr<string>(c.equipment).filter(x => typeof x === 'string'),
     journal: arr<KitchenContext['journal'][number]>(c.journal).filter(j => typeof j?.dish === 'string'),
-    dishes: arr<string>(c.dishes).filter(x => typeof x === 'string')
+    dishes: arr<string>(c.dishes).filter(x => typeof x === 'string'),
+    profile: typeof c.profile === 'string' ? c.profile.slice(0, 3000) : undefined
   }
 }
 const asArray = (v: unknown) => (Array.isArray(v) ? v : [])
@@ -23,6 +24,7 @@ const asArray = (v: unknown) => (Array.isArray(v) ? v : [])
  * POST /api/ai/draft   {context, request}   → {recipe}
  * POST /api/ai/parse   {context, text}      → {filters}
  * POST /api/ai/scan    {context, kind, image(base64 JPEG)} → {items}
+ * POST /api/ai/profile {activity (text summary), current?: {text, by}} → {markdown}
  * GET  /api/ai/usage → {used, cap, model}
  * Passcode-gated and capped per day. Replies are shape-checked here and validated again in the app.
  */
@@ -34,7 +36,7 @@ export default route(['GET', 'POST'], async req => {
     return usageToday()
   }
   const b = body<Record<string, unknown>>(req)
-  if (!['suggest', 'draft', 'parse', 'scan'].includes(action)) throw new HttpError(404, 'Unknown action')
+  if (!['suggest', 'draft', 'parse', 'scan', 'profile'].includes(action)) throw new HttpError(404, 'Unknown action')
   await checkDailyCap()
   const c = context(b)
 
@@ -51,6 +53,14 @@ export default route(['GET', 'POST'], async req => {
     const tags = asArray(b.tags).filter((t): t is string => typeof t === 'string')
     const p = PROMPTS.parse({ catalog: c.catalog, dishes: c.dishes, tags }, str(b.text, 'request', 300))
     return { filters: await generateJson<unknown>(p.prompt, { schema: p.schema, thinking: p.thinking, temperature: 0.2 }) }
+  }
+  if (action === 'profile') {
+    const cur = b.current as { text?: unknown; by?: unknown } | undefined
+    const current = cur && typeof cur.text === 'string' && cur.text.trim() ? { text: cur.text, by: cur.by === 'you' ? 'you' : 'ai' } : null
+    const p = PROMPTS.profile(str(b.activity, 'activity', 12000), current)
+    const out = await generateJson<{ markdown?: unknown }>(p.prompt, { schema: p.schema, thinking: p.thinking, temperature: 0.4 })
+    if (typeof out.markdown !== 'string' || !out.markdown.trim()) throw new HttpError(502, 'The AI replied in an unexpected format. Try again.')
+    return { markdown: out.markdown.trim().slice(0, 4000) }
   }
   // scan
   const kind = b.kind === 'shelf' ? 'shelf' : 'bill'

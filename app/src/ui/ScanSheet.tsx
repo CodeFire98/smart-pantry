@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { logActivity } from '../store/activity'
 import { addDays, restockAmounts, scanToRows, type Kitchen, type ScanRow } from '../engine'
 import { ai, blobToB64 } from '../ai/api'
 import { useAiContext } from '../ai/useAi'
@@ -58,6 +59,7 @@ export function ScanSheet({ onClose }: { onClose: () => void }) {
       }
       return out
     })
+    logActivity({ type: 'scan', text: kind, names: chosen.map(r => (r.id === '__new' ? r.name : catalog[r.id]?.name ?? r.name)) })
     toast(`Pantry updated from your photo: ${chosen.length} item${chosen.length === 1 ? '' : 's'}`)
     onClose()
   }

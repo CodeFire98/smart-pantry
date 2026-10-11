@@ -93,6 +93,8 @@ export interface KitchenContext {
   equipment: string[]
   journal: Array<{ dish: string; version: string; rating: number | null; note: string }>
   dishes: string[]
+  /** "About my cooking" markdown: the cook's taste profile. */
+  profile?: string
 }
 
 const clip = (s: unknown, n: number) => String(s ?? '').slice(0, n)
@@ -104,6 +106,7 @@ export function contextText(c: KitchenContext): string {
     `IN STOCK: ${c.inStock.slice(0, 120).map(i => `${clip(i.id, 40)} (${clip(i.amount, 20)})`).join(', ')}`,
     `USE SOON: ${c.expiring.slice(0, 20).map(e => clip(e, 40)).join(', ') || 'nothing'}`,
     `COOKING JOURNAL (newest first):\n${c.journal.slice(0, 25).map(j => `- ${clip(j.dish, 60)} (${clip(j.version, 30)})${j.rating ? ` ${j.rating}/5` : ''}${j.note ? `: "${clip(j.note, 160)}"` : ''}`).join('\n') || '- nothing logged yet'}`,
+    ...(c.profile?.trim() ? [`TASTE PROFILE (what this cook likes, written from their activity; follow it):\n${clip(c.profile, 2000)}`] : []),
     `EXISTING DISHES (don't repeat): ${c.dishes.slice(0, 120).map(d => clip(d, 60)).join('; ')}`,
     `INGREDIENT CATALOG (id [unit]): ${c.catalog.slice(0, 250).map(i => `${clip(i.id, 40)} [${i.unit ?? 'level'}]`).join(', ')}`
   ].join('\n')
@@ -125,7 +128,7 @@ const RECIPE = {
     plate: { type: 'STRING', enum: ['steel', 'katori', 'ceramic', 'glass'] },
     color: { type: 'STRING', description: 'hex colour of the dish, e.g. #C9772E' },
     tiers: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
-      name: { type: 'STRING' }, mins: { type: 'INTEGER' }, effort: { type: 'INTEGER', description: '1 easy, 2 some, 3 lots' },
+      name: { type: 'STRING', description: 'short version name, 1-3 words (e.g. Basic, Masala, Loaded with egg)' }, mins: { type: 'INTEGER' }, effort: { type: 'INTEGER', description: '1 easy, 2 some, 3 lots' },
       ingredients: { type: 'ARRAY', items: ING }, steps: { type: 'ARRAY', items: { type: 'STRING' } }
     }, required: ['name', 'mins', 'effort', 'ingredients', 'steps'] } },
     newIngredients: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
@@ -155,6 +158,20 @@ export const PROMPTS = {
       meal: { type: 'STRING', enum: ['any', 'breakfast', 'lunch', 'snack', 'dinner'] }, energy: { type: 'STRING', enum: ['any', 'low', 'medium', 'high'] },
       summary: { type: 'STRING', description: 'a few words describing what was understood' }
     }, required: ['dishes', 'tags', 'ingredients', 'maxMins', 'meal', 'energy', 'summary'] },
+    thinking: 'low' as const
+  }),
+  profile: (activity: string, current: { text: string; by: string } | null) => ({
+    prompt: `Write a short "About my cooking" profile for a home cook, in the first person ("I"), from what they actually did in their pantry app. It is read by an AI before suggesting or writing recipes for them, and by the cook, so be specific and useful: name dishes, ingredients, versions and times. Only state patterns the data supports; with little data, say less. No invented facts, no health advice.
+Format: GitHub markdown, at most 220 words, exactly these headings, each with 2-5 short bullets:
+## What I love
+## How I cook
+## What I buy
+## Try next
+Facts that always hold (put each in the bullet it fits, once, briefly): cooks for one; vegetarian and egg dishes are the staples, chicken occasionally; no allergies; induction cooktop, stainless kadai and saucepan. Don't fill sections with "nothing recorded" lines: if there's no data for a section, give 1 sensible bullet from these facts.
+${current ? `CURRENT PROFILE (${current.by === 'you' ? 'edited by the cook: keep what they wrote unless the activity clearly contradicts it' : 'written by you earlier: update it'}):\n${clip(current.text, 3000)}\n` : ''}
+ACTIVITY:
+${clip(activity, 9000)}`,
+    schema: { type: 'OBJECT', properties: { markdown: { type: 'STRING' } }, required: ['markdown'] },
     thinking: 'low' as const
   }),
   scan: (c: Pick<KitchenContext, 'catalog'>, kind: 'bill' | 'shelf') => ({

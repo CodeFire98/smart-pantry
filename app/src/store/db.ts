@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
-import { CATALOG, RECIPES, RecipeSchema, deduct, isoDate, kitchenFromSeed, resolveRecipes, stampKitchen, type Catalog, type JournalEntry, type Kitchen, type Recipe, type RecipeRecord } from '../engine'
+import { CATALOG, RECIPES, RecipeSchema, deduct, isoDate, kitchenFromSeed, resolveRecipes, stampKitchen, type ActivityEvent, type Catalog, type CustomIngredient, type JournalEntry, type Kitchen, type Recipe, type RecipeRecord } from '../engine'
+import { logActivity } from './activity'
 import { notifyChange } from './changes'
 
 interface KV { key: string; value: unknown }
@@ -10,12 +11,16 @@ class PantryDB extends Dexie {
   journal!: Table<JournalEntry, number>
   photos!: Table<Photo, number>
   recipes!: Table<RecipeRecord, string>
+  /** synced: 0 until the server has it */
+  activity!: Table<ActivityEvent & { synced: 0 | 1 }, string>
   constructor() {
     super('smart-pantry')
     this.version(1).stores({ kv: 'key', journal: '++id, recipeId, at', photos: '++id', recipes: 'id' })
     // v2: stable ids + edit times on journal entries (for editing now, syncing later)
     this.version(2).stores({ journal: '++id, recipeId, at, &uid' }).upgrade(tx =>
       tx.table('journal').toCollection().modify((j: JournalEntry) => { j.uid ??= crypto.randomUUID(); j.updatedAt ??= j.at }))
+    // v3: activity log (searches, opens, cooks, orders…) for the taste profile
+    this.version(3).stores({ activity: '&uid, t, synced' })
   }
 }
 
@@ -163,6 +168,7 @@ export async function logCook({ recipe, tierIndex, rating, note, photo, catalog 
   })
   askPersist()
   notifyChange()
+  logActivity({ type: 'cook', id: recipe.id, names: [recipe.name], text: recipe.tiers[tierIndex].name, n: rating })
   return used
 }
 
@@ -170,6 +176,19 @@ export async function logCook({ recipe, tierIndex, rating, note, photo, catalog 
 export async function importRecipes(json: unknown): Promise<{ added: string[]; error?: string }> {
   const list = Array.isArray(json) ? json : (json as { recipes?: unknown[] })?.recipes ?? [json]
   const added: string[] = []
+  // A recipe file can carry the new pantry items its recipes use: {recipes, ingredients: {id: {name, unit, cat}}}
+  const ings = (!Array.isArray(json) && (json as { ingredients?: unknown })?.ingredients) as Record<string, CustomIngredient> | undefined
+  if (ings && typeof ings === 'object') {
+    const ok = Object.entries(ings).filter(([id, v]) => /^[a-z0-9_]{1,60}$/.test(id) && typeof v?.name === 'string' && !CATALOG[id])
+    if (ok.length) await updateKitchen(k => {
+      const fresh = ok.filter(([id]) => !k.customIngredients?.[id])
+      return {
+        ...k,
+        customIngredients: { ...k.customIngredients, ...Object.fromEntries(fresh.map(([id, v]) => [id, { name: v.name.slice(0, 60), cat: v.cat ?? 'fresh', unit: v.unit ?? null }])) },
+        items: { ...k.items, ...Object.fromEntries(fresh.filter(([id]) => !k.items[id]).map(([id, v]) => [id, v.unit ? { q: 0 } : { l: 0 }])) }
+      }
+    })
+  }
   for (const raw of list) {
     const parsed = RecipeSchema.safeParse(raw)
     if (!parsed.success) {

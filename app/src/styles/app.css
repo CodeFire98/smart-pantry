@@ -281,3 +281,14 @@ a.btn{text-decoration:none}
 .recipe-row:last-child{border-bottom:0}
 .recipe-row .art{width:44px;height:44px}
 .ai-note{background:var(--accent-soft);border:0;gap:4px}
+
+/* About my cooking */
+.profile { display: flex; flex-direction: column; gap: 10px; }
+.profile .md h3 { font-size: 14px; margin: 10px 0 4px; }
+.profile .md h3:first-child { margin-top: 0; }
+.profile .md ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.profile .md p { margin: 0 0 6px; }
+.profile .md { font-size: 14px; line-height: 1.45; }
+.profile-edit { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: inherit; resize: vertical; }
+.activity-line { font-size: 12px; }
+.dev-banner { background: #FDE7B0; color: #5A3B00; font-size: 12px; text-align: center; padding: 6px 12px; }

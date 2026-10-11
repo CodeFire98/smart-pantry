@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { isoDate, isPristine, kitchenFromSeed, mergeJournal, mergeKitchen, mergeRecipes, stampPreSync, type JournalEntry, type Kitchen, type RecipeRecord } from '../engine'
+import { isoDate, isPristine, kitchenFromSeed, mergeJournal, mergeKitchen, mergeRecipes, stampPreSync, type ActivityEvent, type JournalEntry, type Kitchen, type RecipeRecord } from '../engine'
 import { onChange } from './changes'
 import { db, putSyncedKitchen, readKitchen } from './db'
 
@@ -51,7 +51,8 @@ async function syncOnce(attempt = 0): Promise<void> {
   if (!navigator.onLine) return set({ status: 'offline' })
   set({ status: 'syncing' })
   try {
-    const remote = await call<{ kitchen: { doc: Kitchen; rev: number } | null; journal: JournalEntry[]; recipes: RecipeRecord[] }>('/api/sync')
+    const since = (await kv<number>('sync:activitySince')) ?? 0
+    const remote = await call<{ kitchen: { doc: Kitchen; rev: number } | null; journal: JournalEntry[]; recipes: RecipeRecord[]; activity?: ActivityEvent[] }>(`/api/sync?activitySince=${since}`)
     // Kitchen: a device that still has only the starting pantry adopts the server copy; otherwise merge.
     let local = await readKitchen()
     if (!(await kv<boolean>('sync:started'))) {
@@ -78,12 +79,21 @@ async function syncOnce(attempt = 0): Promise<void> {
     const r = mergeRecipes(await db.recipes.toArray(), remote.recipes)
     if (r.toPull.length) await db.recipes.bulkPut(r.toPull)
 
+    // Activity: append-only. Take what other devices logged since last time (by server receive time).
+    if (remote.activity?.length) {
+      const have = new Set((await db.activity.where('uid').anyOf(remote.activity.map(a => a.uid)).toArray()).map(a => a.uid))
+      await db.activity.bulkPut(remote.activity.filter(a => !have.has(a.uid)).map(a => ({ ...a, synced: 1 as const })))
+      await setKv('sync:activitySince', Math.max(since, ...remote.activity.map(a => a.r ?? 0)))
+    }
+    const unsent = await db.activity.where('synced').equals(0).limit(500).toArray()
+
     // Push. A 409 means another device saved the kitchen in between: pull + merge again (once).
     try {
       await call('/api/sync', { method: 'POST', body: JSON.stringify({
         kitchen: kitchenChanged ? { doc: kitchen, baseRev: remote.kitchen?.rev ?? 0 } : undefined,
-        journal: j.toPush, recipes: r.toPush
+        journal: j.toPush, recipes: r.toPush, activity: unsent.map(({ synced: _s, ...a }) => a)
       }) })
+      if (unsent.length) await db.activity.where('uid').anyOf(unsent.map(a => a.uid)).modify({ synced: 1 })
     } catch (e) {
       if (e instanceof HttpStatus && e.status === 409 && attempt < 2) return syncOnce(attempt + 1)
       throw e

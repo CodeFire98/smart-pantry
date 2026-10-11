@@ -1,7 +1,7 @@
 import type { JournalEntry, Kitchen, PantryItem } from './types'
 
 /** Kitchen fields synced as a whole (newest edit wins). `items` is merged per item instead. */
-export const KITCHEN_FIELDS = ['equipment', 'list', 'skuMap', 'pendingOrders', 'customIngredients', 'ingredientEdits'] as const
+export const KITCHEN_FIELDS = ['equipment', 'list', 'skuMap', 'pendingOrders', 'customIngredients', 'ingredientEdits', 'profile'] as const
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 /** Stamp what changed between two versions of the kitchen, so another device can tell which edit is newer. */

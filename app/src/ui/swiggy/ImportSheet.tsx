@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { logActivity } from '../../store/activity'
 import { matchOrderItem, packAmount, restockAmounts } from '../../engine'
 import { updateKitchen } from '../../store/db'
 import { useApp } from '../AppContext'
@@ -32,6 +33,7 @@ export function ImportSheet({ orders, onClose }: { orders: ImportOrder[]; onClos
       return { ...out, importedOrders: [...new Set([...(k.importedOrders ?? []), ...done])], pendingOrders: (k.pendingOrders ?? []).filter(p => !done.has(p.orderId)) }
     })
     toast(`Pantry updated: ${lines.length} item${lines.length === 1 ? '' : 's'}`)
+    logActivity({ type: 'restock', names: lines.map(l => catalog[l.id]?.name ?? l.id) })
     onClose()
   }
 
