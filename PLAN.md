@@ -18,7 +18,7 @@ The plan builds outward from the deterministic core, so every phase leaves a usa
 7. Shopping list falls back to copy/share text plus Instamart search links.
 - **Exit:** I use it daily for a week without wanting to fall back to my head.
 
-## Phase 2: Swiggy integration (about 1–2 weeks; localhost needs no approval, so this can start now)
+## Phase 2: Swiggy integration ✅ live 2026-10-11 (Builders Club approved; ordering on in production)
 1. Supabase: auth, tables `pantry_items`, `cook_log`, `ingredient_sku_map`. Sync IndexedDB in both directions.
 2. Edge function `swiggy-proxy`: OAuth 2.1 PKCE, token storage server-side, and a typed wrapper per MCP tool.
 3. **Staging spike first.** Confirm `get_orders` / `get_order_details` return line items, and document the response shape.
@@ -28,7 +28,11 @@ The plan builds outward from the deterministic core, so every phase leaves a usa
 7. Deploy the proxy on Vercel, record a demo video, and submit the Builders Club developer form. It's pre-filled: add the redirect URI (`https://<vercel-domain>/api/auth/swiggy/callback`) and the demo link, then accept the terms. Review takes about 2 weeks.
 - **Exit:** "I want rajma" → confirm → order placed → arrives → pantry updated, with no manual typing.
 
-## Phase 3: Smart edges (optional, about 1 week)
+## Phase 2.5: Sync + polish ✅ 2026-10-11
+- Pantry, journal (with photos), recipes and list sync across devices via Upstash (newest edit wins per item/field)
+- Editable journal entries (version, rating, note, photo later); pantry steps in real pack sizes; add your own pantry items
+
+## Phase 3: Smart edges (next)
 - Free-text → structured query with a free-tier LLM (Gemini Flash or Groq), outputting a JSON schema of `{dishes, tags, energy, meal}`. The engine still ranks.
 - Recipe authoring script: dish name → tiered JSON draft, then my review, then commit.
 - Receipt photo or voice → pantry items.
