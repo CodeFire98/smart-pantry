@@ -58,6 +58,7 @@ export interface Recipe {
   why?: string
   custom?: boolean
   newIngredients?: Record<string, NewIngredient>
+  updatedAt?: number
 }
 
 /** One pantry entry: `q` for quantity-tracked items, `l` (0-3) for level-tracked ones. */
@@ -67,6 +68,8 @@ export interface PantryItem {
   /** ISO date (YYYY-MM-DD) the item is expected to go off. */
   exp?: string
   unsure?: boolean
+  /** Last edited (ms), for syncing between devices. */
+  t?: number
 }
 
 /** An Instamart product you picked for an ingredient (remembered for next time). */
@@ -108,6 +111,10 @@ export interface Kitchen {
   /** Instamart order ids already added to the pantry. */
   importedOrders?: string[]
   customIngredients?: Record<string, CustomIngredient>
+  /** Last edited (ms) per top-level field, for syncing between devices. */
+  fieldT?: Record<string, number>
+  /** Deleted pantry items: id → when (ms), so a deletion syncs instead of coming back. */
+  tombstones?: Record<string, number>
 }
 
 export interface JournalEntry {
@@ -122,6 +129,10 @@ export interface JournalEntry {
   rating: number | null
   note: string
   photoId?: number
+  /** Server key of the photo (synced); photoId is this device's local copy. */
+  photo?: string
+  /** Soft delete, so deletions sync. */
+  deletedAt?: number
   at: number
 }
 

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
-import { CATALOG, RECIPES, RecipeSchema, deduct, isoDate, kitchenFromSeed, type Catalog, type JournalEntry, type Kitchen, type Recipe } from '../engine'
+import { CATALOG, RECIPES, RecipeSchema, deduct, isoDate, kitchenFromSeed, stampKitchen, type Catalog, type JournalEntry, type Kitchen, type Recipe } from '../engine'
+import { notifyChange } from './changes'
 
 interface KV { key: string; value: unknown }
 export interface Photo { id?: number; blob: Blob; at: number }
@@ -34,13 +35,23 @@ export async function ensureKitchen(): Promise<void> {
   })
 }
 
+const readKitchen = async () => ((await db.kv.get('kitchen'))?.value as Kitchen | undefined) ?? kitchenFromSeed(isoDate())
+
+/** Change the kitchen. Edits are time-stamped (per item / per field) so they sync correctly between devices. */
 export async function updateKitchen(fn: (k: Kitchen) => Kitchen): Promise<void> {
   await db.transaction('rw', db.kv, async () => {
-    const cur = ((await db.kv.get('kitchen'))?.value as Kitchen | undefined) ?? kitchenFromSeed(isoDate())
-    await db.kv.put({ key: 'kitchen', value: fn(structuredClone(cur)) })
+    const cur = await readKitchen()
+    await db.kv.put({ key: 'kitchen', value: stampKitchen(cur, fn(structuredClone(cur)), Date.now()) })
   })
   askPersist()
+  notifyChange()
 }
+
+/** Replace the kitchen with an already-merged copy from sync (no new timestamps). */
+export async function putSyncedKitchen(k: Kitchen) {
+  await db.kv.put({ key: 'kitchen', value: k })
+}
+export { readKitchen }
 
 /** Back to the starting pantry amounts. Keeps what you set up: your own items, product picks and orders. */
 export async function resetKitchen(): Promise<void> {
@@ -66,6 +77,7 @@ export function catalogWith(custom: Recipe[], kitchen?: Kitchen): Catalog {
 /** Edit a journal entry (version, rating, note). The pantry is not re-deducted. */
 export async function updateJournal(id: number, patch: Partial<Pick<JournalEntry, 'tier' | 'tierIndex' | 'rating' | 'note'>>) {
   await db.journal.update(id, { ...patch, updatedAt: Date.now() })
+  notifyChange()
 }
 
 /** Add, replace or remove the photo on a journal entry. */
@@ -75,17 +87,21 @@ export async function setJournalPhoto(id: number, photo: Blob | null) {
     if (!j) return
     if (j.photoId != null) await db.photos.delete(j.photoId)
     const photoId = photo ? await db.photos.add({ blob: photo, at: Date.now() }) : undefined
-    await db.journal.update(id, { photoId, updatedAt: Date.now() })
+    // Each photo version gets a new server key, so other devices fetch the new one.
+    await db.journal.update(id, { photoId, photo: photo ? `${j.uid}-${Date.now()}` : undefined, updatedAt: Date.now() })
   })
   askPersist()
+  notifyChange()
 }
 
+/** Soft delete (kept as a tombstone so the deletion syncs to your other devices). */
 export async function deleteJournal(id: number) {
   await db.transaction('rw', db.journal, db.photos, async () => {
     const j = await db.journal.get(id)
     if (j?.photoId != null) await db.photos.delete(j.photoId)
-    await db.journal.delete(id)
+    await db.journal.update(id, { deletedAt: Date.now(), updatedAt: Date.now(), photoId: undefined, photo: undefined, note: '' })
   })
+  notifyChange()
 }
 export const allRecipes = (custom: Recipe[]) => [...RECIPES, ...custom.filter(c => !RECIPES.some(r => r.id === c.id))]
 
@@ -96,16 +112,18 @@ export async function logCook({ recipe, tierIndex, rating, note, photo, catalog 
   let used: ReturnType<typeof deduct>['used'] = []
   await db.transaction('rw', db.kv, db.journal, db.photos, async () => {
     const photoId = photo ? await db.photos.add({ blob: photo, at: Date.now() }) : undefined
-    const cur = ((await db.kv.get('kitchen'))?.value as Kitchen | undefined) ?? kitchenFromSeed(isoDate())
+    const cur = await readKitchen()
     const out = deduct(recipe, tierIndex, cur, catalog)
     used = out.used
-    await db.kv.put({ key: 'kitchen', value: out.kitchen })
+    const now = Date.now(), uid = crypto.randomUUID()
+    await db.kv.put({ key: 'kitchen', value: stampKitchen(cur, out.kitchen, now) })
     await db.journal.add({
       recipeId: recipe.id, recipeName: recipe.name, tier: recipe.tiers[tierIndex].name, tierIndex,
-      rating, note, at: Date.now(), uid: crypto.randomUUID(), updatedAt: Date.now(), ...(photoId != null ? { photoId } : {})
+      rating, note, at: now, uid, updatedAt: now, ...(photoId != null ? { photoId, photo: `${uid}-${now}` } : {})
     })
   })
   askPersist()
+  notifyChange()
   return used
 }
 
@@ -119,11 +137,12 @@ export async function importRecipes(json: unknown): Promise<{ added: string[]; e
       const issue = parsed.error.issues[0]
       return { added, error: `${issue.path.join('.') || 'recipe'}: ${issue.message}` }
     }
-    const r = { ...(parsed.data as Recipe), custom: true }
+    const r = { ...(parsed.data as Recipe), custom: true, updatedAt: Date.now() }
     if (RECIPES.some(x => x.id === r.id)) r.id = `my_${r.id}`
     await db.recipes.put(r)
     added.push(r.name)
   }
+  if (added.length) notifyChange()
   return { added }
 }
 
@@ -133,7 +152,7 @@ export async function exportBackup(): Promise<Backup> {
   return {
     app: 'smart-pantry', version: 1, exportedAt: new Date().toISOString(),
     kitchen: (await db.kv.get('kitchen'))?.value as Kitchen,
-    journal: (await db.journal.toArray()).map(({ photoId: _p, ...j }) => j),
+    journal: (await db.journal.toArray()).filter(j => !j.deletedAt).map(({ photoId: _p, ...j }) => j),
     recipes: await db.recipes.toArray()
   }
 }
@@ -141,10 +160,12 @@ export async function exportBackup(): Promise<Backup> {
 export async function importBackup(b: Backup): Promise<void> {
   if (b?.app !== 'smart-pantry' || !b.kitchen?.items) throw new Error('This file is not a Smart Pantry backup.')
   await db.transaction('rw', db.kv, db.journal, db.recipes, async () => {
-    await db.kv.put({ key: 'kitchen', value: { ...b.kitchen, list: b.kitchen.list ?? [] } })
+    // A restore counts as a fresh edit of everything, so it wins over older copies on other devices.
+    await db.kv.put({ key: 'kitchen', value: stampKitchen(undefined, { ...b.kitchen, list: b.kitchen.list ?? [] }, Date.now()) })
     await db.journal.clear()
     await db.journal.bulkAdd(b.journal.map(({ id: _id, ...j }) => ({ ...j, uid: j.uid ?? crypto.randomUUID(), updatedAt: j.updatedAt ?? j.at })))
     await db.recipes.clear()
     await db.recipes.bulkPut(b.recipes)
   })
+  notifyChange()
 }

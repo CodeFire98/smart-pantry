@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, type Address } from '../../swiggy/api'
 import { useSwiggy } from '../../swiggy/useSwiggy'
+import { syncNow } from '../../store/sync'
 import { useApp } from '../AppContext'
 
 /** My tab → Instamart: app passcode, Swiggy login, delivery address. */
@@ -28,7 +29,7 @@ export function SwiggyCard() {
 
   if (!status) return <div className="card"><b>Instamart</b><div className="sub">Instamart needs a connection to the server. You seem to be offline.</div></div>
 
-  if (!status.authed) return <form className="card" onSubmit={e => { e.preventDefault(); run(async () => { await api.login(passcode); setPasscode('') }, 'Logged in') }}>
+  if (!status.authed) return <form className="card" onSubmit={e => { e.preventDefault(); run(async () => { await api.login(passcode); setPasscode(''); syncNow() }, 'Unlocked. Syncing your kitchen…') }}>
     <div className="row" style={{ justifyContent: 'space-between' }}><b>Instamart</b><span className="sim">Locked</span></div>
     <div className="sub">Enter your app passcode to use Instamart. It keeps your Swiggy account safe on this public site.</div>
     <div className="askbox" style={{ marginTop: 0 }}>

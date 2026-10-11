@@ -11,11 +11,15 @@ const EQUIPMENT = ['kadai', 'saucepan', 'induction', 'blender', 'microwave', 'pr
 
 const editItem = (id: string, fn: (it: PantryItem) => void) => updateKitchen(k => { const it = (k.items[id] ??= {}); fn(it); return k })
 
-/** Set a quantity; topping up a perishable that was out or expired gives it a fresh expiry date. */
-function setQty(id: string, q: number, catalog: Catalog, today: string) {
+/**
+ * Set a quantity (or change it by `delta` from the stored value, so rapid taps add up).
+ * Topping up a perishable that was out or expired gives it a fresh expiry date.
+ */
+function setQty(id: string, q: number | { delta: number }, catalog: Catalog, today: string) {
   return editItem(id, it => {
     const ing = catalog[id], before = it.q ?? 0
-    it.q = Math.max(0, Math.round(q * 100) / 100)
+    const next = typeof q === 'number' ? q : before + q.delta
+    it.q = Math.max(0, Math.round(next * 100) / 100)
     if (it.q > before && ing.kind === 'per' && ing.shelf > 0 && (!it.exp || before === 0 || daysBetween(today, it.exp) < 1)) it.exp = addDays(today, ing.shelf)
   })
 }
@@ -47,13 +51,13 @@ function PantryRow({ id, kitchen, catalog, today, onEditCustom }: { id: string; 
           <button className="btn sm ghost" onClick={() => editItem(id, x => { delete x.unsure; if (ing.unit) x.q = 0; else x.l = 0 })}>Out</button></span>
       : ing.unit
         ? <span className="stepper">
-            <button onClick={() => setQty(id, q - step, catalog, today)} aria-label={`${fmt(step, ing.unit)} less ${ing.name}`}>−</button>
+            <button onClick={() => setQty(id, { delta: -step }, catalog, today)} aria-label={`${fmt(step, ing.unit)} less ${ing.name}`}>−</button>
             {typing != null
               ? <input className="qty-input" autoFocus inputMode="decimal" value={typing} onChange={e => setTyping(e.target.value)} onBlur={commit}
                   onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setTyping(null) }} aria-label={`Amount of ${ing.name} in ${ing.unit}`} />
               : <output className={q === 0 ? 'zero' : ''} onClick={() => setTyping(String(q))} title="Tap to type an exact amount" role="button" tabIndex={0}
                   onKeyDown={e => { if (e.key === 'Enter') setTyping(String(q)) }}>{q === 0 ? 'out' : fmt(q, ing.unit)}</output>}
-            <button onClick={() => setQty(id, q + step, catalog, today)} aria-label={`${fmt(step, ing.unit)} more ${ing.name}`}>+</button></span>
+            <button onClick={() => setQty(id, { delta: step }, catalog, today)} aria-label={`${fmt(step, ing.unit)} more ${ing.name}`}>+</button></span>
         : <button className="level" onClick={() => editItem(id, x => { const l = x.l ?? 0; x.l = l === 0 ? 3 : l - 1 })} aria-label={`${ing.name}: ${LEVELS[q]}. Tap to change`}>
             <span className={`bars l${q}`}><i /><i /><i /></span><span className="lvtext">{LEVELS[q]}</span></button>}
   </div>

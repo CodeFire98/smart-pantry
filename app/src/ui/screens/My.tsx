@@ -6,6 +6,7 @@ import { useApp } from '../AppContext'
 import { Art, Icon, Section } from '../components'
 import { JournalSheet } from '../JournalSheet'
 import { SwiggyCard } from '../swiggy/SwiggyCard'
+import { syncNow, useSyncState } from '../../store/sync'
 
 function Entry({ j, onOpen }: { j: JournalEntry; onOpen: () => void }) {
   const { recipes } = useApp()
@@ -71,8 +72,9 @@ export function My() {
     {(t.liked.length > 0 || t.meh.length > 0) && <Section title="Your taste so far" sub="from your ratings">
       <div className="taste">{t.liked.map(x => <span key={x}>loves {x}</span>)}{t.meh.map(x => <span key={x} className="meh">meh on {x}</span>)}</div>
     </Section>}
+    <SyncRow />
     <Section title="Instamart"><SwiggyCard /></Section>
-    <Section title="Cooked" sub="saved on this phone">
+    <Section title="Cooked">
       {journal.length
         ? <div className="journal">{journal.slice(0, 60).map(j => <Entry key={j.id} j={j} onOpen={() => setEditing(j.id!)} />)}</div>
         : <div className="empty">Nothing logged yet. Cook something, then tap <b>I cooked this</b> on the dish. Add a photo, a rating and a note: your photos become the dish covers, and ratings tune what gets suggested.</div>}
@@ -85,7 +87,7 @@ export function My() {
         <button className="btn sm ghost" onClick={() => fileRecipes.current?.click()}>Import recipe JSON</button>
       </div>
     </Section>
-    <Section title="Backup" sub="photos stay on this phone">
+    <Section title="Backup" sub="a file copy, separate from sync">
       <div className="row">
         <button className="btn sm ghost" onClick={download}>Download backup</button>
         <input ref={fileBackup} className="visually-hidden" type="file" accept="application/json,.json" onChange={e => { onBackup(e.target.files?.[0]); e.target.value = '' }} />
@@ -94,4 +96,20 @@ export function My() {
     </Section>
     {editingEntry && <JournalSheet entry={editingEntry} onClose={() => setEditing(null)} />}
   </>
+}
+
+function SyncRow() {
+  const s = useSyncState()
+  const ago = s.at ? Math.max(0, Math.round((Date.now() - s.at) / 60000)) : null
+  const text = s.status === 'syncing' ? 'Syncing…'
+    : s.status === 'synced' ? `Synced across your devices ${ago ? `${ago} min ago` : 'just now'}`
+    : s.status === 'offline' ? 'Offline. Changes will sync when you’re back online.'
+    : s.status === 'locked' ? 'Not syncing. Unlock with your passcode below to keep phone and laptop in step.'
+    : s.status === 'error' ? s.message ?? 'Couldn’t sync.' : 'Waiting to sync…'
+  const tone = s.status === 'synced' ? 'var(--have)' : s.status === 'error' || s.status === 'locked' ? 'var(--low)' : 'var(--muted)'
+  return <div className="sync-row" style={{ color: tone }}>
+    <span className={`sync-dot ${s.status}`} />
+    <span style={{ flex: 1 }}>{text}</span>
+    {s.status !== 'syncing' && s.status !== 'locked' && <button className="linkbtn" onClick={() => syncNow()}>Sync now</button>}
+  </div>
 }

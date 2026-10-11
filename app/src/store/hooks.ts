@@ -2,6 +2,9 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useMemo, useState } from 'react'
 import type { JournalEntry, Kitchen, Recipe } from '../engine'
 import { allRecipes, catalogWith, db, ensureKitchen } from './db'
+import { fetchPhoto } from './sync'
+
+const fetching = new Set<string>()
 
 const EMPTY_J: JournalEntry[] = []
 const EMPTY_R: Recipe[] = []
@@ -9,7 +12,14 @@ const EMPTY_R: Recipe[] = []
 export function useData() {
   useEffect(() => { ensureKitchen() }, [])
   const kitchen = useLiveQuery(async () => (await db.kv.get('kitchen'))?.value as Kitchen | undefined, [])
-  const journal = useLiveQuery(() => db.journal.orderBy('at').reverse().toArray(), [], EMPTY_J)
+  const journal = useLiveQuery(async () => (await db.journal.orderBy('at').reverse().toArray()).filter(j => !j.deletedAt), [], EMPTY_J)
+  // Photos of entries logged on another device arrive as a server key; fetch each once.
+  useEffect(() => {
+    for (const j of journal) if (j.photo && j.photoId == null && j.id != null && !fetching.has(j.photo)) {
+      fetching.add(j.photo)
+      fetchPhoto(j.id, j.photo).catch(e => console.warn('[sync] photo fetch failed', e)).finally(() => fetching.delete(j.photo!))
+    }
+  }, [journal])
   const custom = useLiveQuery(() => db.recipes.toArray(), [], EMPTY_R)
   const catalog = useMemo(() => catalogWith(custom, kitchen), [custom, kitchen?.customIngredients]) // eslint-disable-line react-hooks/exhaustive-deps
   const recipes = useMemo(() => allRecipes(custom), [custom])
