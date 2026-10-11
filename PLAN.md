@@ -32,11 +32,14 @@ The plan builds outward from the deterministic core, so every phase leaves a usa
 - Pantry, journal (with photos), recipes and list sync across devices via Upstash (newest edit wins per item/field)
 - Editable journal entries (version, rating, note, photo later); pantry steps in real pack sizes; add your own pantry items
 
-## Phase 3: Smart edges (next)
-- Free-text → structured query with a free-tier LLM (Gemini Flash or Groq), outputting a JSON schema of `{dishes, tags, energy, meal}`. The engine still ranks.
-- Recipe authoring script: dish name → tiered JSON draft, then my review, then commit.
-- Receipt photo or voice → pantry items.
-- Lazy pantry check: ask "still have coriander?" only when a top suggestion depends on it.
+## Phase 3: AI helpers (Gemini free tier) ✅ 2026-10-11
+AI only writes things I review; the deterministic engine still ranks. Server: `api/ai/[action].ts` + `api/_lib/ai.ts`; client: `app/src/ai/`, `engine/aiDraft.ts`.
+- **Suggest dishes** (My → Manage recipes → ✨ New dish ideas): 3 new three-version recipes from pantry, use-soon items, ratings and notes (~40 s) → Review & add opens the editor.
+- **Write any dish** (I want → ✨ Write “…”): a draft for my kitchen and diet, opened in the editor (~20 s).
+- **Understand free text** (I want → ✨ Understand with AI): shown only when the word lists recognise nothing; returns filters that the engine ranks (~3 s).
+- **Scan** (Pantry → 📷): bill adds amounts (packs × size per pack, multiplied in code); fridge/shelf photo sets amounts; review every line; unmatched items can be added as new.
+- **Free-tier guardrails:** no billing linked to the Gemini key (so Google refuses rather than charges); app caps of 100 calls/day and 5/min (Redis); Flash-only model allowlist; photos ≤ ~1 MB; passcode-gated; 503 → fallback model `gemini-flash-latest`; function limit 120 s.
+- Later: an activity log / taste profile that AI can read for better personalisation; lazy "still have coriander?" checks.
 
 ## Phase 4: Native shell (when needed)
 - Wrap with Capacitor (reusing the PWA) for push notifications for expiry and delivery tracking, plus a home-screen widget for "tonight's top 3".

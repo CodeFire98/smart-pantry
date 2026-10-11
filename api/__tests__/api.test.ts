@@ -5,6 +5,7 @@ import { decrypt, encrypt } from '../_lib/crypto'
 import { signSession, verifySession } from '../_lib/session'
 import { SwiggyError, unwrap } from '../_lib/swiggy'
 import { syncPrefix } from '../_lib/sync'
+import { ALLOWED_MODELS } from '../_lib/ai'
 
 const key = randomBytes(32)
 
@@ -85,5 +86,13 @@ describe('sync key isolation', () => {
     expect(syncPrefix('development')).toBe('sp-dev:sync:')
     expect(syncPrefix('preview')).toBe('sp-dev:sync:')
     expect(syncPrefix(undefined)).toBe('sp-dev:sync:')
+  })
+})
+
+describe('AI guardrails', () => {
+  it('only free Flash models are allowed', async () => {
+    const re = ALLOWED_MODELS
+    for (const ok of ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash']) expect(re.test(ok)).toBe(true)
+    for (const no of ['gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-pro-latest', 'nano-banana-pro-preview', 'gemini-omni-flash-preview']) expect(re.test(no)).toBe(false)
   })
 })

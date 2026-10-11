@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ai } from '../../ai/api'
 import { RECIPES, taste, type JournalEntry } from '../../engine'
 import { exportBackup, importBackup, importRecipes } from '../../store/db'
 import { usePhotoUrl } from '../../store/hooks'
@@ -76,6 +77,7 @@ export function My() {
       <div className="taste">{t.liked.map(x => <span key={x}>loves {x}</span>)}{t.meh.map(x => <span key={x} className="meh">meh on {x}</span>)}</div>
     </Section>}
     <SyncRow />
+    <AiLine />
     <Section title="Instamart"><SwiggyCard /></Section>
     <Section title="Cooked">
       {journal.length
@@ -117,5 +119,13 @@ function SyncRow() {
     <span className={`sync-dot ${s.status}`} />
     <span style={{ flex: 1 }}>{text}</span>
     {s.status !== 'syncing' && s.status !== 'locked' && <button className="linkbtn" onClick={() => syncNow()}>Sync now</button>}
+  </div>
+}
+
+function AiLine() {
+  const [u, setU] = useState<{ used: number; cap: number; model: string } | null>(null)
+  useEffect(() => { ai.usage().then(setU).catch(() => {}) }, [])
+  return <div className="sub" style={{ marginTop: 8, fontSize: 12 }}>
+    ✨ AI features use Google Gemini (free tier{u ? `, ${u.model}` : ''}). Google may use AI requests to improve its products. {u ? `${u.used} of ${u.cap} AI requests used today.` : ''}
   </div>
 }

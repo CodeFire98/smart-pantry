@@ -280,3 +280,4 @@ a.btn{text-decoration:none}
 .recipe-row{padding:8px 0;border-bottom:1px solid var(--line)}
 .recipe-row:last-child{border-bottom:0}
 .recipe-row .art{width:44px;height:44px}
+.ai-note{background:var(--accent-soft);border:0;gap:4px}

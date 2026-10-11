@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { RECIPES, newRecipeId, rowToSlot, slotToRow, type IngRow, type Meal, type Recipe } from '../../engine'
-import { deleteRecipe, hideRecipe, restoreRecipe, saveRecipe } from '../../store/db'
+import { RECIPES, newRecipeId, rowToSlot, slotToRow, type CustomIngredient, type IngRow, type Meal, type Recipe } from '../../engine'
+import { deleteRecipe, hideRecipe, restoreRecipe, saveRecipe, updateKitchen } from '../../store/db'
 import { useApp } from '../AppContext'
 import { Icon } from '../components'
 
@@ -15,11 +15,17 @@ const toDraft = (r?: Recipe): Draft => r
   : { name: '', meals: ['dinner'], tags: '', tiers: [{ name: 'Basic', mins: '15', effort: 1, rows: [], steps: '' }] }
 
 /** Edit any recipe (built-in or yours) or create a new one. Versions are cumulative: each adds to the one before. */
-export function RecipeEditor({ recipeId, onClose }: { recipeId?: string; onClose: () => void }) {
-  const { recipes, hiddenRecipes, editedRecipes, catalog, toast } = useApp()
+export function RecipeEditor({ recipeId, onClose, draft, newIngredients = {}, why }: {
+  recipeId?: string; onClose: () => void
+  /** An AI draft to start from (saved as a new recipe). */
+  draft?: Recipe; newIngredients?: Record<string, CustomIngredient>; why?: string
+}) {
+  const { recipes, hiddenRecipes, editedRecipes, catalog: baseCatalog, toast } = useApp()
+  // AI drafts may use ingredients you don't have yet; they're offered here and added to your pantry only on save.
+  const catalog = useMemo(() => ({ ...Object.fromEntries(Object.entries(newIngredients).map(([id, v]) => [id, { name: `${v.name} (new)`, cat: v.cat, unit: v.unit, kind: 'dur' as const, shelf: 0, sku: null }])), ...baseCatalog }), [baseCatalog, newIngredients])
   const original = recipeId ? [...recipes, ...hiddenRecipes].find(r => r.id === recipeId) : undefined
   const builtIn = !!recipeId && RECIPES.some(r => r.id === recipeId)
-  const [d, setD] = useState<Draft>(() => toDraft(original))
+  const [d, setD] = useState<Draft>(() => toDraft(original ?? draft))
   const [err, setErr] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<'delete' | 'reset' | null>(null)
   const ingIds = useMemo(() => Object.keys(catalog).sort((a, b) => catalog[a].name.localeCompare(catalog[b].name)), [catalog])
@@ -29,7 +35,7 @@ export function RecipeEditor({ recipeId, onClose }: { recipeId?: string; onClose
   const moveTier = (i: number, dir: -1 | 1) => setD(x => { const t = [...x.tiers]; [t[i], t[i + dir]] = [t[i + dir], t[i]]; return { ...x, tiers: t } })
 
   const build = (): Recipe => ({
-    ...(original ?? {}),
+    ...(original ?? (draft ? { art: draft.art } : {})),
     id: original?.id ?? newRecipeId(d.name, new Set([...recipes, ...hiddenRecipes].map(r => r.id))),
     name: d.name.trim(),
     meals: d.meals,
@@ -49,7 +55,15 @@ export function RecipeEditor({ recipeId, onClose }: { recipeId?: string; onClose
     const bad = d.tiers.findIndex(t => !t.name.trim() || !(Number(t.mins) > 0) || !t.rows.some(r => r.id))
     if (bad >= 0) return setErr(`Version ${bad + 1} needs a name, minutes and at least one ingredient.`)
     try {
-      await saveRecipe(build())
+      const recipe = build()
+      const used = new Set(recipe.tiers.flatMap(t => t.add.flatMap(s => s.replace('?', '').split('|').map(a => a.split(':')[0]))))
+      const toAdd = Object.entries(newIngredients).filter(([id]) => used.has(id) && !baseCatalog[id])
+      if (toAdd.length) await updateKitchen(k => ({
+        ...k,
+        customIngredients: { ...k.customIngredients, ...Object.fromEntries(toAdd) },
+        items: { ...k.items, ...Object.fromEntries(toAdd.map(([id, v]) => [id, v.unit ? { q: 0 } : { l: 0 }])) }
+      }))
+      await saveRecipe(recipe)
       toast(`${d.name.trim()} saved`)
       onClose()
     } catch (e) { setErr(e instanceof Error ? e.message : 'Couldn’t save this recipe.') }
@@ -59,11 +73,13 @@ export function RecipeEditor({ recipeId, onClose }: { recipeId?: string; onClose
   return <div className="overlay" role="dialog" aria-label={original ? `Edit ${original.name}` : 'New recipe'} style={{ zIndex: 7 }}>
     <div className="ov-head">
       <button className="back" onClick={onClose} aria-label="Back">‹</button>
-      <h2 style={{ flex: 1 }}>{original ? 'Edit recipe' : 'New recipe'}</h2>
+      <h2 style={{ flex: 1 }}>{original ? 'Edit recipe' : draft ? 'Review AI draft' : 'New recipe'}</h2>
       <button className="btn sm accent" onClick={save}>{Icon.check}Save</button>
     </div>
     <div className="scroll editor">
       {err && <div className="warn" style={{ color: 'var(--miss)', background: 'var(--miss-soft)' }}>{err}</div>}
+      {draft && <div className="card ai-note"><b>✨ Drafted by AI</b>{why && <span className="sub">{why}</span>}
+        <span className="sub">Check the amounts and steps, change anything, then Save.{Object.keys(newIngredients).length ? ` Items marked “(new)” will be added to your pantry as out of stock.` : ''}</span></div>}
       <label className="field">Dish name<input id="recipe-name" value={d.name} onChange={e => setD({ ...d, name: e.target.value })} placeholder="e.g. Rajma Chawal" /></label>
       <div><div className="sub" style={{ marginBottom: 6 }}>Good for</div>
         <div className="row">{MEALS.map(m => <button type="button" key={m} className="chip" aria-pressed={d.meals.includes(m)}

@@ -6,6 +6,11 @@
   "outputDirectory": "app/dist",
   "framework": null,
   "functions": {
-    "api/swiggy/[action].ts": { "maxDuration": 30 }
+    "api/swiggy/[action].ts": {
+      "maxDuration": 30
+    },
+    "api/ai/[action].ts": {
+      "maxDuration": 120
+    }
   }
 }

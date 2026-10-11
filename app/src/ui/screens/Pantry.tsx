@@ -4,6 +4,7 @@ import { resetKitchen, updateKitchen } from '../../store/db'
 import { useApp } from '../AppContext'
 import { Icon, Section } from '../components'
 import { CATS, ItemSheet } from '../ItemSheet'
+import { ScanSheet } from '../ScanSheet'
 import { OrdersSync } from '../swiggy/OrdersSync'
 
 const LEVELS = ['Out', 'Low', 'Half', 'Full']
@@ -75,6 +76,7 @@ function PantryRow({ id, kitchen, catalog, today, onEditCustom }: { id: string; 
 export function Pantry() {
   const { kitchen, catalog, ctx, toast } = useApp()
   const [sheet, setSheet] = useState<{ edit?: string } | null>(null)
+  const [scanning, setScanning] = useState(false)
   const ids = Object.keys(catalog).filter(id => !catalog[id].hidden && (kitchen.items[id] || catalog[id].kind !== 'stp' || catalog[id].sku))
   const hidden = Object.keys(catalog).filter(id => catalog[id].hidden)
   const amount = (id: string) => { const it = kitchen.items[id]; return it ? (catalog[id].unit ? it.q ?? 0 : it.l ?? 0) : 0 }
@@ -87,7 +89,10 @@ export function Pantry() {
     <div className="eyebrow">What's in the kitchen</div>
     <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
       <h1>Pantry</h1>
-      <button className="btn sm accent" onClick={() => setSheet({})}>{Icon.plus}Add item</button>
+      <span className="row" style={{ gap: 6 }}>
+        <button className="btn sm ghost" onClick={() => setScanning(true)}>📷 Scan</button>
+        <button className="btn sm accent" onClick={() => setSheet({})}>{Icon.plus}Add item</button>
+      </span>
     </div>
     <div className="stats">
       <div className="stat"><b>{ids.filter(i => amount(i) > 0).length}</b><span>in stock</span></div>
@@ -114,6 +119,7 @@ export function Pantry() {
     <div className="row" style={{ marginTop: 24, justifyContent: 'center' }}>
       <ResetButton onReset={() => { resetKitchen(); toast('Pantry reset to your starting list') }} />
     </div>
+    {scanning && <ScanSheet onClose={() => setScanning(false)} />}
     {sheet && <ItemSheet key={sheet.edit ?? 'new'} editId={sheet.edit} onClose={() => setSheet(null)} />}
   </>
 }
